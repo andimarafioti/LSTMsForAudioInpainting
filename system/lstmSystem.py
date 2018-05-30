@@ -32,7 +32,7 @@ class LSTMSystem(DNNSystem):
 	def _spectrogramImageSummary(self):
 		output = tf.reverse(tf.transpose(self._architecture.output()[0]), axis=[0])
 		target = tf.reverse(tf.transpose(self._architecture.target()[0]), axis=[0])
-		total = tf.reverse(tf.transpose(tf.concat([self._architecture.input()[0, :, :, 0], self._architecture.target()[0],
+		total = tf.reverse(tf.transpose(tf.concat([self._architecture.input()[0, :, :, 0], self._architecture.output()[0],
 						  self._architecture.input()[0, :, :, 1]], axis = 0)), axis=[0])
 
 		return tf.summary.merge([tf.summary.image("Original", [colorize(target)]),
