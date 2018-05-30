@@ -43,7 +43,13 @@ class PreAndPostProcessor(object):
         stftOfLeftAndRightSideStacked = tf.contrib.signal.stft(signals=leftAndRightSideStackedAndPadded,
                                       frame_length=self._fftWindowLength, frame_step=self._fftHopSize)
         absSTFTOfLeftAndRightSideStacked = tf.transpose(tf.abs(stftOfLeftAndRightSideStacked), perm=[0, 2, 3, 1])
-        return absSTFTOfLeftAndRightSideStacked
+        return self._removePaddedCoefs(absSTFTOfLeftAndRightSideStacked)
+
+    def _removePaddedCoefs(self, aBatchOfStft):
+        """batchOfSides should contain the left side on the first dimension and the right side on the second"""
+        leftSideNoPadded = aBatchOfStft[:, :-3, :, 0]
+        rightSideNoPadded = aBatchOfStft[:, 3:, :, 1]
+        return tf.stack([leftSideNoPadded, rightSideNoPadded], axis=-1)
 
     def inverseStftOfGap(self, batchOfStftOfGap):
         window_fn = functools.partial(window_ops.hann_window, periodic=True)
