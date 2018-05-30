@@ -30,13 +30,13 @@ class LSTMSystem(DNNSystem):
 
 	def _spectrogramImageSummary(self):
 		output = tf.reverse(tf.transpose(self._architecture.output()[0]), axis=[0])
-		target = tf.reverse(self._architecture.target()[0], axis=[0])
+		target = tf.reverse(tf.transpose(self._architecture.target()[0]), axis=[0])
 		total = tf.reverse(tf.transpose(tf.concat([self._architecture.input()[0, :, :, 0], self._architecture.target()[0],
 						  self._architecture.input()[0, :, :, 1]], axis = 0)), axis=[0])
 
-		return tf.summary.merge([tf.summary.image("Original", colorize(target)),
-								tf.summary.image("Generated", colorize(output)),
-								tf.summary.image("Complete", colorize(total))])
+		return tf.summary.merge([tf.summary.image("Original", [colorize(target)]),
+								tf.summary.image("Generated", [colorize(output)]),
+								tf.summary.image("Complete", [colorize(total)])])
 
 	def _evaluate(self, summariesDict, feed_dict, validReader, sess):
 		trainSNRSummaryToWrite = sess.run(summariesDict['train_SNR_summary'], feed_dict=feed_dict)
