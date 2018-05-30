@@ -34,7 +34,7 @@ class PreAndPostProcessor(object):
         signalWithoutExtraSides = self._removeExtraSidesForSTFTOfGap(aBatchOfSignals)
         stft = tf.contrib.signal.stft(signals=signalWithoutExtraSides,
                                       frame_length=self._fftWindowLength, frame_step=self._fftHopSize)
-        return self._divideComplexIntoRealAndImag(stft)
+        return tf.abs(stft)
 
     def stftForTheContextOf(self, aBatchOfSignals):
         assert len(aBatchOfSignals.shape) == 2
@@ -42,9 +42,10 @@ class PreAndPostProcessor(object):
         leftAndRightSideStackedAndPadded = self._addPaddingForStftOfContext(leftAndRightSideStacked)
         stftOfLeftAndRightSideStacked = tf.contrib.signal.stft(signals=leftAndRightSideStackedAndPadded,
                                       frame_length=self._fftWindowLength, frame_step=self._fftHopSize)
-        realAndImagSTFTOfLeftAndRightSideStacked = self._divideComplexIntoRealAndImag(stftOfLeftAndRightSideStacked)
-        shape = realAndImagSTFTOfLeftAndRightSideStacked.get_shape().as_list()
-        return tf.reshape(realAndImagSTFTOfLeftAndRightSideStacked, (shape[0], shape[2], shape[3], shape[1]*shape[4]))
+        absSTFTOfLeftAndRightSideStacked = tf.abs(stftOfLeftAndRightSideStacked)
+        shape = absSTFTOfLeftAndRightSideStacked.get_shape().as_list()
+        print(shape)
+        return absSTFTOfLeftAndRightSideStacked
 
     def inverseStftOfGap(self, batchOfStftOfGap):
         window_fn = functools.partial(window_ops.hann_window, periodic=True)
