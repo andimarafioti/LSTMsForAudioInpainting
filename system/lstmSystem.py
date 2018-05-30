@@ -7,32 +7,16 @@ from utils.tfReader import TFReader
 
 
 class LSTMSystem(DNNSystem):
-	def __init__(self, architecture, batchSize, aPreProcessor, lstmParameters, name):
+	def __init__(self, architecture, aPreProcessor, lstmParameters, name):
 		self._aPreProcessor = aPreProcessor
 		self._lstmParameters = lstmParameters
 		self._windowSize = lstmParameters.signalLength()
-		self._batchSize = batchSize
-		self._audio = tf.placeholder(tf.float32, shape=(batchSize, self._windowSize), name='audio_data')
-		self._inputAndTarget = aPreProcessor.inputAndTarget(self._audio)
+		self._batchSize = lstmParameters.batchSize()
+		self._audio = tf.placeholder(tf.float32, shape=(self._batchSize, self._windowSize), name='audio_data')
+		self._preProcessForContext = aPreProcessor.stftForTheContextOf(self._audio)
+		self._preProcessForGap = aPreProcessor.stftForGapOf(self._audio)
 		super().__init__(architecture, name)
 		self._SNR = tf.reduce_mean(self._pavlovs_SNR(self._architecture.output(), self._architecture.target(), onAxis=[1, 2]))
-		# self._spectrogramImageSummary = self._spectrogramImageSummary()
-
-	def generate(self, STFTs, length=100, model_num=None):
-		with tf.Session() as sess:
-			if model_num is not None:
-				path = self.modelsPath(model_num)
-			else:
-				path = self.modelsPath()
-			saver = tf.train.Saver()
-			saver.restore(sess, path)
-			print("Model restored.")
-			sess.run([tf.local_variables_initializer()])
-
-			feed_dict = {self._architecture.isTraining(): False}
-			generatedSpectrograms = sess.run(self._architecture.generateXOutputs(STFTs, length), feed_dict=feed_dict)
-
-			return generatedSpectrograms
 
 	def optimizer(self, learningRate):
 		update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -40,25 +24,19 @@ class LSTMSystem(DNNSystem):
 			return tf.train.AdamOptimizer(learning_rate=learningRate).minimize(self._architecture.loss())
 
 	def _feedDict(self, data, sess, isTraining=True):
-		net_input, net_target = sess.run(self._inputAndTarget, feed_dict={self._audio: data})
+		net_input, net_target = sess.run([self._preProcessForContext, self._preProcessForGap], feed_dict={self._audio: data})
 		return {self._architecture.input(): net_input, self._architecture.target(): net_target,
 				self._architecture.isTraining(): isTraining}
 
 	def _spectrogramImageSummary(self):
-		frames = 12
-		originalAndGeneratedSpectrogram = self._architecture.generateXOutputs(self._architecture.input(), frames)[0]
-		originalAndGeneratedSpectrogram = tf.transpose(originalAndGeneratedSpectrogram)
-		originalAndGeneratedSpectrogram = colorize(originalAndGeneratedSpectrogram)
-		originalAndGeneratedSpectrogram = tf.expand_dims(originalAndGeneratedSpectrogram, 0)
+		output = tf.reverse(tf.transpose(self._architecture.output()[0]), axis=[0])
+		target = tf.reverse(self._architecture.target()[0], axis=[0])
+		total = tf.reverse(tf.transpose(tf.concat(self._architecture.input()[0, :, :, 0], self._architecture.target()[0],
+						  self._architecture.input()[0, :, :, 1], axis = 0)), axis=[0])
 
-		originalImage = originalAndGeneratedSpectrogram[:, :, int(self._lstmParameters.fftFrames()) -
-															frames-1:int(self._lstmParameters.fftFrames())-1, :]
-		generatedImage = originalAndGeneratedSpectrogram[:, :, int(self._lstmParameters.fftFrames())-1:, :]
-
-		return tf.summary.merge([tf.summary.image("Original", originalImage),
-								tf.summary.image("Generated", generatedImage),
-								tf.summary.image("Complete", originalAndGeneratedSpectrogram[
-															:, :, int(self._lstmParameters.fftFrames())-frames:, :])])
+		return tf.summary.merge([tf.summary.image("Original", colorize(target)),
+								tf.summary.image("Generated", colorize(output)),
+								tf.summary.image("Complete", colorize(total))])
 
 	def _evaluate(self, summariesDict, feed_dict, validReader, sess):
 		trainSNRSummaryToWrite = sess.run(summariesDict['train_SNR_summary'], feed_dict=feed_dict)
