@@ -51,10 +51,12 @@ class LSTMSystem(DNNSystem):
 		validSNRSummary = sess.run(summariesDict['valid_SNR_summary'], feed_dict)
 		imageSummary = sess.run(summariesDict['image_summaries'], feed_dict)
 
-		summariesDict['forward'].plotVector(self._architecture._forwardVars)
+		forwardVars = sess.run(self._architecture._forwardVars)
+		summariesDict['forward'].plotVector(forwardVars)
 		forwardSumm = summariesDict['forward'].produceSummaryToWrite(sess)
 
-		summariesDict['backward'].plotVector(self._architecture._backwardVars)
+		backwardVars = sess.run(self._architecture._backwardVars)
+		summariesDict['backward'].plotVector(backwardVars)
 		backwardSumm = summariesDict['backward'].produceSummaryToWrite(sess)
 
 		return [trainSNRSummaryToWrite, validSNRSummary, imageSummary, forwardSumm, backwardSumm]
