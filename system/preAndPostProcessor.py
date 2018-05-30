@@ -42,7 +42,7 @@ class PreAndPostProcessor(object):
         leftAndRightSideStackedAndPadded = self._addPaddingForStftOfContext(leftAndRightSideStacked)
         stftOfLeftAndRightSideStacked = tf.contrib.signal.stft(signals=leftAndRightSideStackedAndPadded,
                                       frame_length=self._fftWindowLength, frame_step=self._fftHopSize)
-        absSTFTOfLeftAndRightSideStacked = tf.abs(stftOfLeftAndRightSideStacked)
+        absSTFTOfLeftAndRightSideStacked = tf.transpose(tf.abs(stftOfLeftAndRightSideStacked), axis=[0, 2, 3, 1])
         shape = absSTFTOfLeftAndRightSideStacked.get_shape().as_list()
         print(shape)
         return absSTFTOfLeftAndRightSideStacked
