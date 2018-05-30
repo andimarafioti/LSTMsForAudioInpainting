@@ -43,8 +43,6 @@ class PreAndPostProcessor(object):
         stftOfLeftAndRightSideStacked = tf.contrib.signal.stft(signals=leftAndRightSideStackedAndPadded,
                                       frame_length=self._fftWindowLength, frame_step=self._fftHopSize)
         absSTFTOfLeftAndRightSideStacked = tf.transpose(tf.abs(stftOfLeftAndRightSideStacked), perm=[0, 2, 3, 1])
-        shape = absSTFTOfLeftAndRightSideStacked.get_shape().as_list()
-        print(shape)
         return absSTFTOfLeftAndRightSideStacked
 
     def inverseStftOfGap(self, batchOfStftOfGap):
