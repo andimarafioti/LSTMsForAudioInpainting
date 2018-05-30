@@ -17,19 +17,21 @@ class ContextEncoderLSTMArchitecture(Architecture):
         with tf.variable_scope("Loss"):
             # normalize values !! divide by max input and multiply output
 
-            targetSquaredNorm = tf.reduce_sum(tf.square(self._target), axis=[1, 2])
+            forward_reconstruction_loss = tf.reduce_sum(tf.square(self._target - self._forwardPrediction))
+            backward_reconstruction_loss = tf.reduce_sum(tf.square(self._target - self._backwardPrediction))
 
-            error = self._target - self._output
-            error_per_example = tf.reduce_sum(tf.square(error), axis=[1, 2])
+            reconstruction_loss = tf.reduce_sum(tf.square(self._target - self._output))
 
-            reconstruction_loss = 0.5 * tf.reduce_sum(error_per_example * (1 + 5 / (targetSquaredNorm + 1e-4)))
             lossL2 = tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables()]) * 1e-5
-            total_loss = tf.add_n([reconstruction_loss, lossL2])
+            total_loss = tf.add_n([reconstruction_loss, lossL2, forward_reconstruction_loss, backward_reconstruction_loss])
 
             total_loss_summary = tf.summary.scalar("total_loss", total_loss)
             l2_loss_summary = tf.summary.scalar("lossL2", lossL2)
             rec_loss_summary = tf.summary.scalar("reconstruction_loss", reconstruction_loss)
-            self._lossSummaries = tf.summary.merge([rec_loss_summary, l2_loss_summary, total_loss_summary])
+            frec_loss_summary = tf.summary.scalar("forw_reconstruction_loss", forward_reconstruction_loss)
+            brec_loss_summary = tf.summary.scalar("back_reconstruction_loss", backward_reconstruction_loss)
+            self._lossSummaries = tf.summary.merge([rec_loss_summary, l2_loss_summary, total_loss_summary,
+                                                    frec_loss_summary, brec_loss_summary])
 
             return total_loss
 
@@ -80,19 +82,18 @@ class ContextEncoderLSTMArchitecture(Architecture):
             self._forwardVars = mixing_forward_variables
             self._backwardVars = mixing_backward_variables
 
-            # output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
-            # print(mixing_backward_variables)
-            #
-            # for i in range(int(self._lstmParams.gapStftFrameCount())):
-            #     intermediate_output = forwards_gap[:, i, :] * mixing_forward_variables[i] + backwards_gap[:, i, :] * mixing_backward_variables[i]
-            #     intermediate_output = tf.expand_dims(intermediate_output, axis=1)
-            #     print(output.shape)
-            #     output = tf.concat([output, intermediate_output], axis=1)
+            self._forwardPrediction = forwards_gap
+            self._backwardPrediction = backwards_gap
 
-            # return output
-            averaged_predictions = tf.reduce_mean([forwards_gap, backwards_gap], axis=0)
+            output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
 
-            return averaged_predictions
+            for i in range(int(self._lstmParams.gapStftFrameCount())):
+                intermediate_output = forwards_gap[:, i, :] * mixing_forward_variables[i] + backwards_gap[:, i, :] * mixing_backward_variables[i]
+                intermediate_output = tf.expand_dims(intermediate_output, axis=1)
+                print(output.shape)
+                output = tf.concat([output, intermediate_output], axis=1)
+
+            return output
 
     def _weight_variable(self, shape):
         return tf.get_variable('W', shape, initializer=tf.contrib.layers.xavier_initializer())
