@@ -23,7 +23,7 @@ class ContextEncoderLSTMArchitecture(Architecture):
             reconstruction_loss = tf.reduce_sum(tf.square(self._target - self._output))
 
             lossL2 = tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables()]) * 1e-5
-            total_loss = tf.add_n([reconstruction_loss, lossL2, forward_reconstruction_loss, backward_reconstruction_loss])
+            total_loss = tf.add_n([reconstruction_loss, lossL2])
 
             total_loss_summary = tf.summary.scalar("total_loss", total_loss)
             l2_loss_summary = tf.summary.scalar("lossL2", lossL2)
