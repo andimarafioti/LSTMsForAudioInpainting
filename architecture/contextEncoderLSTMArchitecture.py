@@ -77,6 +77,9 @@ class ContextEncoderLSTMArchitecture(Architecture):
             with tf.variable_scope('backward', reuse=reuse):
                 mixing_backward_variables = self._weight_variable([self._lstmParams.gapStftFrameCount()])
 
+            self._forwardVars = mixing_forward_variables
+            self._backwardVars = mixing_backward_variables
+
             output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
 
             for i in range(int(self._lstmParams.gapStftFrameCount())):
