@@ -19,6 +19,16 @@ class PlotSummary(object):
         feed_dict = {self._placeholder: decoded_image}
         return session.run(self._summary, feed_dict=feed_dict)
 
+    def plotVector(self, vector):
+        plt.plot(vector)
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        plt.close()
+        buf.seek(0)
+        image = tf.image.decode_png(buf.getvalue(), channels=4)
+        image = tf.expand_dims(image, 0)
+        self._image = image
+
     def plotSideBySide(self, out_gaps, reconstructed):
         f, axarr = plt.subplots(4, 2, sharey='row')
         f.set_size_inches(14, 24)
