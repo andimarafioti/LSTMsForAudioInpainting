@@ -3,6 +3,7 @@ import numpy as np
 import copy
 from system.dnnSystem import DNNSystem
 from utils.colorize import colorize
+from utils.legacy.plotSummary import PlotSummary
 from utils.tfReader import TFReader
 
 
@@ -50,7 +51,13 @@ class LSTMSystem(DNNSystem):
 		validSNRSummary = sess.run(summariesDict['valid_SNR_summary'], feed_dict)
 		imageSummary = sess.run(summariesDict['image_summaries'], feed_dict)
 
-		return [trainSNRSummaryToWrite, validSNRSummary, imageSummary]
+		summariesDict['forward'].plotVector(self._architecture._forwardVars)
+		forwardSumm = summariesDict['forward'].produceSummaryToWrite(sess)
+
+		summariesDict['backward'].plotVector(self._architecture._backwardVars)
+		backwardSumm = summariesDict['backward'].produceSummaryToWrite(sess)
+
+		return [trainSNRSummaryToWrite, validSNRSummary, imageSummary, forwardSumm, backwardSumm]
 
 	def _loadReader(self, dataPath, capacity=int(1e6)):
 		return TFReader(dataPath, self._windowSize, batchSize=self._batchSize, capacity=capacity, num_epochs=400)
@@ -59,8 +66,8 @@ class LSTMSystem(DNNSystem):
 		summaries_dict = {'train_SNR_summary': tf.summary.scalar("training_SNR", self._SNR),
 						'valid_SNR_summary': tf.summary.scalar("validation_SNR", self._SNR),
 						'image_summaries': self._spectrogramImageSummary(),
-						'forwardHist': tf.summary.histogram('forward', self._architecture._forwardVars),
-						'backwardHist': tf.summary.histogram('backward', self._architecture._backwardVars)}
+						'forward': PlotSummary('forward'),
+						'backward': PlotSummary('backward')}
 		return summaries_dict
 
 	def _squaredEuclideanNorm(self, tensor, onAxis=[1, 2, 3]):
