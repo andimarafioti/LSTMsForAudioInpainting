@@ -32,7 +32,7 @@ class LstmContextInpaintingParameters(object):
         return self._frameCountForSignalLength(self._gapLength + (self.padding()) * 2)
 
     def contextStftFrameCount(self):
-        return self._frameCountForSignalLength(((self._signalLength - self._gapLength) / 2) + self.padding())
+        return self._frameCountForSignalLength((self._signalLength - self._gapLength) / 2)
 
     def fftFreqBins(self):
         return self._fftWindowLength // 2 + 1
