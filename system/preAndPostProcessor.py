@@ -7,12 +7,12 @@ __author__ = 'Andres'
 
 
 class PreAndPostProcessor(object):
-    def __init__(self, signalLength, gapLength, fftWindowLength, fftHopSize):
+    def __init__(self, params):
         super(PreAndPostProcessor, self).__init__()
-        self._signalLength = signalLength
-        self._gapLength = gapLength
-        self._fftWindowLength = fftWindowLength
-        self._fftHopSize = fftHopSize
+        self._signalLength = params.signalLength()
+        self._gapLength = params.gapLength()
+        self._fftWindowLength = params.fftWindowLength()
+        self._fftHopSize = params.fftHopSize()
 
     def signalLength(self):
         return self._signalLength
