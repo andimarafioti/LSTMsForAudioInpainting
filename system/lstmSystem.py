@@ -51,15 +51,14 @@ class LSTMSystem(DNNSystem):
 		validSNRSummary = sess.run(summariesDict['valid_SNR_summary'], feed_dict)
 		imageSummary = sess.run(summariesDict['image_summaries'], feed_dict)
 
-		forwardVars = sess.run(self._architecture._forwardVars)
-		summariesDict['forward'].plotVector(forwardVars)
-		forwardSumm = summariesDict['forward'].produceSummaryToWrite(sess)
+		# forwardVars = sess.run(self._architecture._forwardVars)
+		# summariesDict['forward'].plotVector(forwardVars)
+		# forwardSumm = summariesDict['forward'].produceSummaryToWrite(sess)
+		# backwardVars = sess.run(self._architecture._backwardVars)
+		# summariesDict['backward'].plotVector(backwardVars)
+		# backwardSumm = summariesDict['backward'].produceSummaryToWrite(sess)
 
-		backwardVars = sess.run(self._architecture._backwardVars)
-		summariesDict['backward'].plotVector(backwardVars)
-		backwardSumm = summariesDict['backward'].produceSummaryToWrite(sess)
-
-		return [trainSNRSummaryToWrite, validSNRSummary, imageSummary, forwardSumm, backwardSumm]
+		return [trainSNRSummaryToWrite, validSNRSummary, imageSummary] #, forwardSumm, backwardSumm]
 
 	def _loadReader(self, dataPath, capacity=int(1e6)):
 		return TFReader(dataPath, self._windowSize, batchSize=self._batchSize, capacity=capacity, num_epochs=400)
