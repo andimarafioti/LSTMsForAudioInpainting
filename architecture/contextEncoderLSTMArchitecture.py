@@ -74,7 +74,9 @@ class ContextEncoderLSTMArchitecture(Architecture):
 
             backwards_gap = tf.reverse(backwards_gap, axis=[1])
 
-            mixing_variables = self._weight_variable([self._lstmParams.gapStftFrameCount(), 2*self._lstmParams.fftFreqBins(), self._lstmParams.fftFreqBins()])
+            mixing_variables = self._weight_variable([self._lstmParams.gapStftFrameCount(),
+                                                      self._lstmParams.inputChannels()*self._lstmParams.fftFreqBins(),
+                                                      self._lstmParams.fftFreqBins()])
 
             self._forwardPrediction = forwards_gap
             self._backwardPrediction = backwards_gap
