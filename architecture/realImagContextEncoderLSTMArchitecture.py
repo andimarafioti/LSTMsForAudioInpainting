@@ -17,7 +17,9 @@ class RealImagContextEncoderLSTMArchitecture(ContextEncoderLSTMArchitecture):
 
             return total_loss
 
-    def _network(self, data, reuse=False):
-        real = super()._network(data[:, :, :, 0], reuse)
-        imag = super()._network(data[:, :, :, 1], True)
+    def _network(self, context, reuse=False):
+        real_context = tf.stack([context[:, :, :, 0], context[:, :, :, 2]], axis=-1)
+        imag_context = tf.stack([context[:, :, :, 1], context[:, :, :, 3]], axis=-1)
+        real = super()._network(real_context, reuse)
+        imag = super()._network(imag_context, True)
         return tf.stack([real, imag], axis=-1)
