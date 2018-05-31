@@ -37,7 +37,7 @@ class ContextEncoderLSTMArchitecture(Architecture):
 
     def _lstmNetwork(self, data, initial_state, reuse, name):
         with tf.variable_scope(name, reuse=reuse):
-            rnn_cell = tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize(), use_peepholes=True)
+            rnn_cell = tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize())
             dataset = tf.unstack(data, axis=-2)
 
             outputs, states = tf.nn.static_rnn(rnn_cell, dataset, initial_state=initial_state, dtype=tf.float32)

@@ -7,7 +7,7 @@ from system.preAndPostProcessor import PreAndPostProcessor
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-sessionsName = "test_peepholesontextLSTM_"
+sessionsName = "test_ContextLSTM_"
 
 params = LstmContextInpaintingParameters(lstmSize=512, batchSize=64, signalLength=5120, gapLength=1024,
 										 fftWindowLength=512, fftHopSize=128)
