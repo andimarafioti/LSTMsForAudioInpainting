@@ -3,6 +3,7 @@ from unittest import TestCase
 import numpy as np
 import tensorflow as tf
 
+from architecture.parameters.lstmContextInpaintingParameters import LstmContextInpaintingParameters
 from system.preAndPostProcessor import PreAndPostProcessor
 
 __author__ = 'Andres'
@@ -15,10 +16,11 @@ class TestStftForTheContextEncoder(TestCase):
         self.fft_window_length = 512
         self.fft_hop_size = 128
 
-        self.anStftForTheInpaintingSetting = PreAndPostProcessor(signalLength=self.signal_length,
-                                                                 gapLength=self.gap_length,
-                                                                 fftWindowLength=self.fft_window_length,
-                                                                 fftHopSize=self.fft_hop_size)
+        self.params = LstmContextInpaintingParameters(lstmSize=512, batchSize=64, signalLength=self.signal_length,
+                                                      gapLength=self.gap_length,
+                                                 fftWindowLength=self.fft_window_length, fftHopSize=self.fft_hop_size)
+
+        self.anStftForTheInpaintingSetting = PreAndPostProcessor(self.params)
 
     def test01TheStftTakesTheInpaintingParametersAsInput(self):
         self.assertEquals(self.anStftForTheInpaintingSetting.signalLength(), self.signal_length)
@@ -31,18 +33,20 @@ class TestStftForTheContextEncoder(TestCase):
 
         fft_window_length = 1024
         fft_hop_size = 128
-        anStftForTheInpaintingSetting = PreAndPostProcessor(signalLength=self.signal_length,
-                                                            gapLength=self.gap_length,
-                                                            fftWindowLength=fft_window_length,
-                                                            fftHopSize=fft_hop_size)
+        params = LstmContextInpaintingParameters(lstmSize=512, batchSize=64, signalLength=self.signal_length,
+                                                 gapLength=self.gap_length,
+                                                 fftWindowLength=fft_window_length, fftHopSize=fft_hop_size)
+
+        anStftForTheInpaintingSetting = PreAndPostProcessor(params)
         self.assertEquals(anStftForTheInpaintingSetting.padding(), fft_window_length - fft_hop_size)
 
         fft_window_length = 1024
         fft_hop_size = 256
-        anStftForTheInpaintingSetting = PreAndPostProcessor(signalLength=self.signal_length,
-                                                            gapLength=self.gap_length,
-                                                            fftWindowLength=fft_window_length,
-                                                            fftHopSize=fft_hop_size)
+        params = LstmContextInpaintingParameters(lstmSize=512, batchSize=64, signalLength=self.signal_length,
+                                                 gapLength=self.gap_length,
+                                                 fftWindowLength=fft_window_length, fftHopSize=fft_hop_size)
+
+        anStftForTheInpaintingSetting = PreAndPostProcessor(params)
         self.assertEquals(anStftForTheInpaintingSetting.padding(), fft_window_length - fft_hop_size)
 
     def test03TheStftKnowsWhatSignalItShouldTakeForTheSTFTOfTheGap(self):
@@ -57,11 +61,12 @@ class TestStftForTheContextEncoder(TestCase):
 
         fft_window_length = 128
         fft_hop_size = 32
+        params = LstmContextInpaintingParameters(lstmSize=512, batchSize=64, signalLength=self.signal_length,
+                                                 gapLength=self.gap_length,
+                                                 fftWindowLength=fft_window_length, fftHopSize=fft_hop_size)
 
-        anStftForTheInpaintingSetting = PreAndPostProcessor(signalLength=self.signal_length,
-                                                            gapLength=self.gap_length,
-                                                            fftWindowLength=fft_window_length,
-                                                            fftHopSize=fft_hop_size)
+
+        anStftForTheInpaintingSetting = PreAndPostProcessor(params)
         produced_signal = anStftForTheInpaintingSetting._removeExtraSidesForSTFTOfGap(fake_batch_of_signal)
         padding = fft_window_length - fft_hop_size
         np.testing.assert_almost_equal(fake_batch_of_signal[:, gap_begins - padding:gap_ends + padding], produced_signal)
@@ -118,7 +123,7 @@ class TestStftForTheContextEncoder(TestCase):
 
         side_length = (self.signal_length-self.gap_length)//2
         framesOnSides = ((side_length + self.anStftForTheInpaintingSetting.padding() - self.fft_window_length)
-                         / self.fft_hop_size)+1
+                         / self.fft_hop_size)+1-3
         binsPerFrame = self.fft_window_length//2+1
         realAndImagChannels = 2
         beforeAndAfterChannels = 2

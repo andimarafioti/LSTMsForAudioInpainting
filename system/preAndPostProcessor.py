@@ -32,24 +32,30 @@ class PreAndPostProcessor(object):
     def stftForGapOf(self, aBatchOfSignals):
         assert len(aBatchOfSignals.shape) == 2
         signalWithoutExtraSides = self._removeExtraSidesForSTFTOfGap(aBatchOfSignals)
-        stft = tf.contrib.signal.stft(signals=signalWithoutExtraSides,
-                                      frame_length=self._fftWindowLength, frame_step=self._fftHopSize)
-        return tf.abs(stft)
+        return self._realAndImagSTFT(signalWithoutExtraSides)
 
     def stftForTheContextOf(self, aBatchOfSignals):
         assert len(aBatchOfSignals.shape) == 2
         leftAndRightSideStacked = self._removeGap(aBatchOfSignals)
         leftAndRightSideStackedAndPadded = self._addPaddingForStftOfContext(leftAndRightSideStacked)
-        stftOfLeftAndRightSideStacked = tf.contrib.signal.stft(signals=leftAndRightSideStackedAndPadded,
+
+        realAndImagSTFTOfLeftSide = self._realAndImagSTFT(leftAndRightSideStackedAndPadded[:, 0])
+        realAndImagSTFTOfRightSide = self._realAndImagSTFT(leftAndRightSideStackedAndPadded[:, 1])
+
+        contextRealAndImagSTFT = tf.concat([realAndImagSTFTOfLeftSide, realAndImagSTFTOfRightSide], axis=-1)
+        return self._removePaddedCoefs(contextRealAndImagSTFT)
+
+    def _realAndImagSTFT(self, aBatchOfSignals):
+        stft = tf.contrib.signal.stft(signals=aBatchOfSignals,
                                       frame_length=self._fftWindowLength, frame_step=self._fftHopSize)
-        absSTFTOfLeftAndRightSideStacked = tf.transpose(tf.abs(stftOfLeftAndRightSideStacked), perm=[0, 2, 3, 1])
-        return self._removePaddedCoefs(absSTFTOfLeftAndRightSideStacked)
+        return self._divideComplexIntoRealAndImag(stft)
 
     def _removePaddedCoefs(self, aBatchOfStft):
-        """batchOfSides should contain the left side on the first dimension and the right side on the second"""
-        leftSideNoPadded = aBatchOfStft[:, :-3, :, 0]
-        rightSideNoPadded = aBatchOfStft[:, 3:, :, 1]
-        return tf.stack([leftSideNoPadded, rightSideNoPadded], axis=-1)
+        """batchOfSides should contain the left side on the last dimension, first two channels
+        and the right side on the second two"""
+        leftSideNoPadded = aBatchOfStft[:, :-3, :, 0:2]
+        rightSideNoPadded = aBatchOfStft[:, 3:, :, 2:]
+        return tf.concat([leftSideNoPadded, rightSideNoPadded], axis=-1)
 
     def inverseStftOfGap(self, batchOfStftOfGap):
         window_fn = functools.partial(window_ops.hann_window, periodic=True)
