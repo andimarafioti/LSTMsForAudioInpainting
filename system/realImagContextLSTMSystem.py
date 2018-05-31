@@ -12,8 +12,8 @@ class RealImagContextLSTMSystem(LSTMSystem):
     def _spectrogramImageSummary(self):
         output = tf.abs(tf.transpose(self._architecture.output()[0]))
         target = tf.abs(tf.transpose(self._architecture.target()[0]))
-        total = tf.abs(tf.transpose(tf.concat([self._architecture.input()[0, :, :, 0], self._architecture.output()[0],
-                          self._architecture.input()[0, :, :, 1]], axis = 0)))
+        total = tf.abs(tf.transpose(tf.concat([self._architecture.input()[0, :, :, 0:2], self._architecture.output()[0],
+                          self._architecture.input()[0, :, :, 2:4]], axis=0)))
 
         return tf.summary.merge([tf.summary.image("Original", [colorize(target)]),
                                 tf.summary.image("Generated", [colorize(output)]),
