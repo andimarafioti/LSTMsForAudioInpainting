@@ -1,8 +1,9 @@
 class LstmContextInpaintingParameters(object):
-    def __init__(self, lstmSize, batchSize, signalLength, gapLength, fftWindowLength, fftHopSize):
+    def __init__(self, lstmSize, batchSize, signalLength, inputChannels, gapLength, fftWindowLength, fftHopSize):
         self._signalLength = signalLength
         self._gapLength = gapLength
         self._batchSize = batchSize
+        self._inputChannels = inputChannels
         self._lstmSize = lstmSize
         self._fftWindowLength = fftWindowLength
         self._fftHopSize = fftHopSize
@@ -18,6 +19,9 @@ class LstmContextInpaintingParameters(object):
 
     def batchSize(self):
         return self._batchSize
+
+    def inputChannels(self):
+        return self._inputChannels
 
     def lstmSize(self):
         return self._lstmSize

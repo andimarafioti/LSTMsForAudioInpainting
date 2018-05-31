@@ -9,8 +9,8 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 sessionsName = "test_ContextLSTM_"
 
-params = LstmContextInpaintingParameters(lstmSize=512, batchSize=64, signalLength=5120, gapLength=1024,
-										 fftWindowLength=512, fftHopSize=128)
+params = LstmContextInpaintingParameters(lstmSize=512, batchSize=64, signalLength=5120, inputChannels=4,
+										 gapLength=1024, fftWindowLength=512, fftHopSize=128)
 
 contextArchitecture = ContextEncoderLSTMArchitecture(params)
 

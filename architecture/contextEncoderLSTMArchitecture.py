@@ -7,7 +7,7 @@ class ContextEncoderLSTMArchitecture(Architecture):
     def __init__(self, lstmParams):
         with tf.variable_scope("LSTMArchitecture"):
             self._lstmParams = lstmParams
-            self._inputShape = (lstmParams.batchSize(), lstmParams.contextStftFrameCount(), lstmParams.fftFreqBins(), 2)
+            self._inputShape = (lstmParams.batchSize(), lstmParams.contextStftFrameCount(), lstmParams.fftFreqBins(), lstmParams.inputChannels())
             super().__init__()
 
     def inputShape(self):
