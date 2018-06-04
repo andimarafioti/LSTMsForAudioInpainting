@@ -5,10 +5,10 @@ from architecture.contextEncoderLSTMArchitecture import ContextEncoderLSTMArchit
 class RealImagContextEncoderLSTMArchitecture(ContextEncoderLSTMArchitecture):
     def _lossGraph(self):
         with tf.variable_scope("Loss"):
-            freq_penalty = tf.range(start=0, limit=self._lstmParams.fftFreqBins(), delta=1) + 1
+            freq_penalty = tf.range(start=0, limit=self._lstmParams.fftFreqBins(), delta=1, dtype=tf.float32) + 1
 
             reconstruction_loss = tf.reduce_sum(
-                tf.reduce_sum(tf.square(self._target - self._output), axis=[0, 1, 3]*freq_penalty))
+                tf.reduce_sum(tf.square(self._target - self._output), axis=[0, 1, 3])*freq_penalty)
 
             lossL2 = tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables()]) * 1e-5
             total_loss = tf.add_n([reconstruction_loss, lossL2])
