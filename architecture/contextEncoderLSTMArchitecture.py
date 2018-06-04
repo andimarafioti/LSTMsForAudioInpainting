@@ -17,10 +17,13 @@ class ContextEncoderLSTMArchitecture(Architecture):
         with tf.variable_scope("Loss"):
             # normalize values !! divide by max input and multiply output
 
+            freq_penalty = tf.range(start=0, limit=self._lstmParams.fftFreqBins(), delta=1) + 1
+
             forward_reconstruction_loss = tf.reduce_sum(tf.square(self._target - self._forwardPrediction))
             backward_reconstruction_loss = tf.reduce_sum(tf.square(self._target - self._backwardPrediction))
 
-            reconstruction_loss = tf.reduce_sum(tf.square(self._target - self._output))
+            reconstruction_loss = tf.reduce_sum(
+                tf.reduce_sum(tf.square(self._target - self._output), axis=[0, 1, 3]*freq_penalty))
 
             lossL2 = tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables()]) * 1e-5
             total_loss = tf.add_n([reconstruction_loss, lossL2])
@@ -37,10 +40,12 @@ class ContextEncoderLSTMArchitecture(Architecture):
 
     def _lstmNetwork(self, data, initial_state, reuse, name):
         with tf.variable_scope(name, reuse=reuse):
-            rnn_cell = tf.contrib.rnn.MultiRNNCell(
-                [tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
-                 tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
-                 tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize())])
+            rnn_cell = tf.contrib.rnn.BasicLSTMCell(self._lstmParams.lstmSize())
+
+            # rnn_cell = tf.contrib.rnn.MultiRNNCell(
+            #     [tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
+            #      tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
+            #      tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize())])
 
             dataset = tf.unstack(data, axis=-2)
 
@@ -93,6 +98,29 @@ class ContextEncoderLSTMArchitecture(Architecture):
                 output = tf.concat([output, intermediate_output], axis=1)
 
             return output
+
+            # with tf.variable_scope('forward', reuse=reuse):
+            #     mixing_forward_variables = self._weight_variable(
+            #         [self._lstmParams.gapStftFrameCount(), self._lstmParams.fftFreqBins(), self._lstmParams.fftFreqBins()])
+            # with tf.variable_scope('backward', reuse=reuse):
+            #     mixing_backward_variables = self._weight_variable(
+            #         [self._lstmParams.gapStftFrameCount(), self._lstmParams.fftFreqBins(), self._lstmParams.fftFreqBins()])
+            #
+            # self._forwardVars = mixing_forward_variables
+            # self._backwardVars = mixing_backward_variables
+            #
+            # self._forwardPrediction = forwards_gap
+            # self._backwardPrediction = backwards_gap
+            #
+            # output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
+            #
+            # for i in range(int(self._lstmParams.gapStftFrameCount())):
+            #     intermediate_output = tf.matmul(forwards_gap[:, i, :], mixing_forward_variables[i]) + tf.matmul(
+            #         backwards_gap[:, i, :], mixing_backward_variables[i])
+            #     intermediate_output = tf.expand_dims(intermediate_output, axis=1)
+            #     output = tf.concat([output, intermediate_output], axis=1)
+            #
+            # return output
 
     def _weight_variable(self, shape):
         return tf.get_variable('W', shape, initializer=tf.contrib.layers.xavier_initializer())
