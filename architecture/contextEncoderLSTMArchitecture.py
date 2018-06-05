@@ -91,9 +91,10 @@ class ContextEncoderLSTMArchitecture(Architecture):
             output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
 
             concat_gaps = tf.concat([forwards_gap, backwards_gap], axis=-1)
-            left_doubled_side = tf.concat([context[:, -3:, :, 0], context[:, -3:, :, 0]], axis=-1)
-            right_doubled_side = tf.concat([context[:, :3, :, 1], context[:, :3, :, 1]], axis=-1)
+            left_doubled_side = tf.concat([forward_lstmed[:, -4:-1, :], forward_lstmed[:, -4:-1, :]], axis=-1)
 
+            right_side = tf.reverse(backward_lstmed[:, -4:-1, :], axis=[1])
+            right_doubled_side = tf.concat([right_side, right_side], axis=-1)
             total_gaps = tf.concat([left_doubled_side, concat_gaps, right_doubled_side], axis=1)
 
             for i in range(int(self._lstmParams.gapStftFrameCount())):
