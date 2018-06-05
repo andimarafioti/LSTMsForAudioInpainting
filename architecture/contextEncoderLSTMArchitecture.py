@@ -42,9 +42,9 @@ class ContextEncoderLSTMArchitecture(Architecture):
         with tf.variable_scope(name, reuse=reuse):
             # rnn_cell = tf.contrib.rnn.BasicLSTMCell(self._lstmParams.lstmSize())
             rnn_cell = tf.contrib.rnn.MultiRNNCell(
-                [tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
-                 tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
-                 tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize())])
+                [tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize())])#,
+                 # tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
+                 # tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize())])
 
             dataset = tf.unstack(data, axis=-2)
 
@@ -82,8 +82,7 @@ class ContextEncoderLSTMArchitecture(Architecture):
 
             backwards_gap = tf.reverse(backwards_gap, axis=[1])
 
-            mixing_variables = self._weight_variable([self._lstmParams.gapStftFrameCount(),
-                                                      2*self._lstmParams.fftFreqBins(),
+            mixing_variables = self._weight_variable([2*self._lstmParams.fftFreqBins(),
                                                       self._lstmParams.fftFreqBins()])
 
             self._forwardPrediction = forwards_gap
@@ -92,7 +91,7 @@ class ContextEncoderLSTMArchitecture(Architecture):
             output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
 
             for i in range(int(self._lstmParams.gapStftFrameCount())):
-                intermediate_output = tf.matmul(tf.concat([forwards_gap[:, i, :], backwards_gap[:, i, :]], axis=1), mixing_variables[i])
+                intermediate_output = tf.matmul(tf.concat([forwards_gap[:, i, :], backwards_gap[:, i, :]], axis=1), mixing_variables)
                 intermediate_output = tf.expand_dims(intermediate_output, axis=1)
                 output = tf.concat([output, intermediate_output], axis=1)
 
