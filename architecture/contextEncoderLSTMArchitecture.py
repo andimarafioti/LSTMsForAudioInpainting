@@ -82,7 +82,7 @@ class ContextEncoderLSTMArchitecture(Architecture):
 
             backwards_gap = tf.reverse(backwards_gap, axis=[1])
 
-            mixing_variables = self._weight_variable([2*self._lstmParams.fftFreqBins(),
+            mixing_variables = self._weight_variable([5*2*self._lstmParams.fftFreqBins(),
                                                       self._lstmParams.fftFreqBins()])
 
             self._forwardPrediction = forwards_gap
@@ -90,11 +90,18 @@ class ContextEncoderLSTMArchitecture(Architecture):
 
             output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
 
+            concat_gaps = tf.concat([forwards_gap, backwards_gap], axis=-1)
+            left_doubled_side = tf.concat([context[:, -2:, :, 0], context[:, -2:, :, 0]], axis=-1)
+            right_doubled_side = tf.concat([context[:, :2, :, 1], context[:, :2, :, 1]], axis=-1)
+
+            total_gaps = tf.concat([left_doubled_side, concat_gaps, right_doubled_side], axis=1)
+
             for i in range(int(self._lstmParams.gapStftFrameCount())):
-                intermediate_output = tf.matmul(tf.concat([forwards_gap[:, i, :], backwards_gap[:, i, :]], axis=1), mixing_variables)
+                intermediate_output = tf.reshape(total_gaps[:, i:i+5, :], (self._lstmParams.batchSize(),
+                                                                           5*2*self._lstmParams.fftFreqBins()))
+                intermediate_output = tf.matmul(intermediate_output, mixing_variables)
                 intermediate_output = tf.expand_dims(intermediate_output, axis=1)
                 output = tf.concat([output, intermediate_output], axis=1)
-
             return output
 
             # with tf.variable_scope('forward', reuse=reuse):
