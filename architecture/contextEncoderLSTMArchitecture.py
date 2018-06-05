@@ -43,6 +43,7 @@ class ContextEncoderLSTMArchitecture(Architecture):
             # rnn_cell = tf.contrib.rnn.BasicLSTMCell(self._lstmParams.lstmSize())
             rnn_cell = tf.contrib.rnn.MultiRNNCell(
                 [tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
+                 tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
                  tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize())])
 
             dataset = tf.unstack(data, axis=-2)
