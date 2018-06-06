@@ -36,6 +36,5 @@ class RealImagContextEncoderLSTMArchitecture(ContextEncoderLSTMArchitecture):
         imag_backward = self._backwardPrediction
         self._forwardPrediction = tf.stack([real_forward, imag_forward], axis=-1)
         self._backwardPrediction = tf.stack([real_backward, imag_backward], axis=-1)
-        print(self._backwardPrediction.shape)
 
         return tf.stack([real, imag], axis=-1)
