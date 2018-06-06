@@ -22,9 +22,25 @@ class RealImagContextLSTMSystem(LSTMSystem):
         complexRight = self._architecture.input()[0, :, :, 2:4]
         rightSpectrogram = tf.sqrt(tf.square(complexRight[:, :, 0]) + tf.square(complexRight[:, :, 1]))
 
+        complexForward = self._architecture._forwardPrediction[0]
+        forwardSpectrogram = tf.sqrt(tf.square(complexForward[:, :, 0]) + tf.square(complexForward[:, :, 1]))
+
+        complexBackward = self._architecture._backwardPrediction[0]
+        backwardSpectrogram = tf.sqrt(tf.square(complexBackward[:, :, 0]) + tf.square(complexBackward[:, :, 1]))
+
         totalSpectrogram = tf.transpose(tf.concat([leftSpectrogram, outputSpectrogram,
                                                    rightSpectrogram], axis=0))
 
-        return tf.summary.merge([tf.summary.image("Original", [colorize(tf.transpose(targetSpectrogram))]),
-                                tf.summary.image("Generated", [colorize(tf.transpose(outputSpectrogram))]),
+        frontPrediction = tf.transpose(tf.concat([leftSpectrogram, forwardSpectrogram,
+                                                   rightSpectrogram], axis=0))
+
+        backPrediction = tf.transpose(tf.concat([leftSpectrogram, backwardSpectrogram,
+                                                   rightSpectrogram], axis=0))
+
+        original = tf.transpose(tf.concat([leftSpectrogram, targetSpectrogram,
+                                                   rightSpectrogram], axis=0))
+
+        return tf.summary.merge([tf.summary.image("Original", [colorize(original)]),
+                                 tf.summary.image("Forward", [colorize(tf.transpose(frontPrediction))]),
+                                tf.summary.image("Backward", [colorize(tf.transpose(backPrediction))]),
                                 tf.summary.image("Complete", [colorize(totalSpectrogram)])])
