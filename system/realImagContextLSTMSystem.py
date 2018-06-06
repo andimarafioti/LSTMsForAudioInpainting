@@ -41,6 +41,6 @@ class RealImagContextLSTMSystem(LSTMSystem):
                                                    rightSpectrogram], axis=0))
 
         return tf.summary.merge([tf.summary.image("Original", [colorize(original)]),
-                                 tf.summary.image("Forward", [colorize(tf.transpose(frontPrediction))]),
-                                tf.summary.image("Backward", [colorize(tf.transpose(backPrediction))]),
+                                 tf.summary.image("Forward", [colorize(frontPrediction)]),
+                                tf.summary.image("Backward", [colorize(backPrediction)]),
                                 tf.summary.image("Complete", [colorize(totalSpectrogram)])])
