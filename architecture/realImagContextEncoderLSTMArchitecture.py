@@ -5,8 +5,8 @@ from architecture.contextEncoderLSTMArchitecture import ContextEncoderLSTMArchit
 class RealImagContextEncoderLSTMArchitecture(ContextEncoderLSTMArchitecture):
     def _lossGraph(self):
         with tf.variable_scope("Loss"):
-            forward_reconstruction_loss = tf.reduce_sum(tf.square(self._target - self._forwardPrediction))
-            backward_reconstruction_loss = tf.reduce_sum(tf.square(self._target - self._backwardPrediction))
+            forward_reconstruction_loss = tf.reduce_sum(tf.square(self._target - self._forwardPrediction)) * 0.5
+            backward_reconstruction_loss = tf.reduce_sum(tf.square(self._target - self._backwardPrediction)) * 0.5
 
             reconstruction_loss = tf.reduce_sum(tf.square(self._target - self._output))
 
