@@ -60,15 +60,32 @@ class ContextEncoderLSTMArchitecture(Architecture):
                 out_output = tf.concat([out_output, output], axis=1)
             return out_output, states
 
+    def normalize(self, data):
+        maxim = tf.reduce_max(data)
+        minim = tf.reduce_min(data)
+        normed = (data-minim)/(maxim-minim)
+        return normed
+
+    def deNormalize(self, normalDataAndoriginalData):
+        normalData, originalData = normalDataAndoriginalData[0], normalDataAndoriginalData[1]
+        originalMax = tf.reduce_max(originalData)
+        originalMin = tf.reduce_min(originalData)
+        unNormed = normalData*(originalMax-originalMin)+originalMin
+        return unNormed
+
     def _network(self, context, reuse=False):
         with tf.variable_scope("Network", reuse=reuse):
             #prepare data
             forward_context = context[:, :, :, 0]
             backward_context = tf.reverse(context[:, :, :, 1], axis=[1])
 
+            #normalize
+            normal_forward_context = tf.map_fn(self.normalize, forward_context)
+            normal_backward_context = tf.map_fn(self.normalize, backward_context)
+
             #run through network
-            forward_lstmed, forward_states = self._lstmNetwork(forward_context, None, reuse, 'forward_lstm')
-            backward_lstmed, backward_states = self._lstmNetwork(backward_context, None, reuse, 'backward_lstm')
+            forward_lstmed, forward_states = self._lstmNetwork(normal_forward_context, None, reuse, 'forward_lstm')
+            backward_lstmed, backward_states = self._lstmNetwork(normal_backward_context, None, reuse, 'backward_lstm')
 
             forwards_gap = forward_lstmed[:, -1:, :]
             backwards_gap = backward_lstmed[:, -1:, :]
@@ -80,11 +97,14 @@ class ContextEncoderLSTMArchitecture(Architecture):
                 previous_frame, backward_states = self._lstmNetwork(backwards_gap[:, -1:, :], backward_states, True, 'backward_lstm')
                 backwards_gap = tf.concat([backwards_gap, previous_frame], axis=1)
 
+            #PostProcess LSTMed data
+            forwards_gap = tf.map_fn(self.deNormalize, (forwards_gap, forward_context), dtype=tf.float32)
+            backwards_gap = tf.map_fn(self.deNormalize, (backwards_gap, backward_context), dtype=tf.float32)
             backwards_gap = tf.reverse(backwards_gap, axis=[1])
 
+            #mix the two predictions
             mixing_variables = self._weight_variable([7*2*self._lstmParams.fftFreqBins(),
                                                       self._lstmParams.fftFreqBins()])
-
             self._forwardPrediction = forwards_gap
             self._backwardPrediction = backwards_gap
 
