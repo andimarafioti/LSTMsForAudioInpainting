@@ -7,10 +7,10 @@ from system.realImagContextLSTMSystem import RealImagContextLSTMSystem
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-sessionsName = "test_forw_back_loss_sameContrib_"
+sessionsName = "test_realImagContext3LSTM512_7WeightsOnLstmed_fft256_"
 
 params = LstmContextInpaintingParameters(lstmSize=512, batchSize=64, signalLength=5120, inputChannels=4,
-										 gapLength=1024, fftWindowLength=512, fftHopSize=128)
+										 gapLength=1024, fftWindowLength=256, fftHopSize=64)
 
 contextArchitecture = RealImagContextEncoderLSTMArchitecture(params)
 
