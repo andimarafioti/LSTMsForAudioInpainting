@@ -38,17 +38,32 @@ class ContextEncoderLSTMArchitecture(Architecture):
 
             return total_loss
 
+    def _normalize(self, data):
+        maxim = tf.reduce_max(data)
+        minim = tf.reduce_min(data)
+        normed = (data-minim)/(maxim-minim+1e-8)
+        return normed
+
+    def _deNormalize(self, normalDataAndoriginalData):
+        normalData, originalData = normalDataAndoriginalData[0], normalDataAndoriginalData[1]
+        originalMax = tf.reduce_max(originalData)
+        originalMin = tf.reduce_min(originalData)
+        unNormed = normalData*(originalMax-originalMin+1e-8)+originalMin
+        return unNormed
+
     def _lstmNetwork(self, data, initial_state, reuse, name):
         with tf.variable_scope(name, reuse=reuse):
+            normalizedData = tf.map_fn(self._normalize, data)
+
             # rnn_cell = tf.contrib.rnn.BasicLSTMCell(self._lstmParams.lstmSize())
             rnn_cell = tf.contrib.rnn.MultiRNNCell(
                 [tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
                  tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
                  tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize())])
 
-            dataset = tf.unstack(data, axis=-2)
+            sequentialData = tf.unstack(normalizedData, axis=-2)
 
-            outputs, states = tf.nn.static_rnn(rnn_cell, dataset, initial_state=initial_state, dtype=tf.float32)
+            outputs, states = tf.nn.static_rnn(rnn_cell, sequentialData, initial_state=initial_state, dtype=tf.float32)
 
             out_output = np.empty([data.shape[0], 0, self._lstmParams.fftFreqBins()])
             weights = self._weight_variable([self._lstmParams.lstmSize(), self._lstmParams.fftFreqBins()])
@@ -58,20 +73,8 @@ class ContextEncoderLSTMArchitecture(Architecture):
                 mat_muled = tf.matmul(output, weights) + biases
                 output = tf.reshape(mat_muled, [-1, 1, self._lstmParams.fftFreqBins()])
                 out_output = tf.concat([out_output, output], axis=1)
-            return out_output, states
-
-    def normalize(self, data):
-        maxim = tf.reduce_max(data)
-        minim = tf.reduce_min(data)
-        normed = (data-minim)/(maxim-minim+1e-8)
-        return normed
-
-    def deNormalize(self, normalDataAndoriginalData):
-        normalData, originalData = normalDataAndoriginalData[0], normalDataAndoriginalData[1]
-        originalMax = tf.reduce_max(originalData)
-        originalMin = tf.reduce_min(originalData)
-        unNormed = normalData*(originalMax-originalMin+1e-8)+originalMin
-        return unNormed
+            denormalizedOutput = tf.map_fn(self._deNormalize, (out_output, data), dtype=tf.float32)
+            return denormalizedOutput, states
 
     def _network(self, context, reuse=False):
         with tf.variable_scope("Network", reuse=reuse):
@@ -79,13 +82,9 @@ class ContextEncoderLSTMArchitecture(Architecture):
             forward_context = context[:, :, :, 0]
             backward_context = tf.reverse(context[:, :, :, 1], axis=[1])
 
-            #normalize
-            normal_forward_context = tf.map_fn(self.normalize, forward_context)
-            normal_backward_context = tf.map_fn(self.normalize, backward_context)
-
             #run through network
-            forward_lstmed, forward_states = self._lstmNetwork(normal_forward_context, None, reuse, 'forward_lstm')
-            backward_lstmed, backward_states = self._lstmNetwork(normal_backward_context, None, reuse, 'backward_lstm')
+            forward_lstmed, forward_states = self._lstmNetwork(forward_context, None, reuse, 'forward_lstm')
+            backward_lstmed, backward_states = self._lstmNetwork(backward_context, None, reuse, 'backward_lstm')
 
             forwards_gap = forward_lstmed[:, -1:, :]
             backwards_gap = backward_lstmed[:, -1:, :]
@@ -97,9 +96,6 @@ class ContextEncoderLSTMArchitecture(Architecture):
                 previous_frame, backward_states = self._lstmNetwork(backwards_gap[:, -1:, :], backward_states, True, 'backward_lstm')
                 backwards_gap = tf.concat([backwards_gap, previous_frame], axis=1)
 
-            #PostProcess LSTMed data
-            forwards_gap = tf.map_fn(self.deNormalize, (forwards_gap, forward_context), dtype=tf.float32)
-            backwards_gap = tf.map_fn(self.deNormalize, (backwards_gap, backward_context), dtype=tf.float32)
             backwards_gap = tf.reverse(backwards_gap, axis=[1])
 
             #mix the two predictions
@@ -111,11 +107,9 @@ class ContextEncoderLSTMArchitecture(Architecture):
             output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
 
             concat_gaps = tf.concat([forwards_gap, backwards_gap], axis=-1)
-            left_side = tf.map_fn(self.deNormalize, (forward_lstmed[:, -4:-1, :], forward_context), dtype=tf.float32)
-            left_doubled_side = tf.concat([left_side, left_side], axis=-1)
 
-            right_side = tf.reverse(tf.map_fn(self.deNormalize, (backward_lstmed[:, -4:-1, :], backward_context),
-                                              dtype=tf.float32), axis=[1])
+            left_doubled_side = tf.concat([forward_lstmed[:, -4:-1, :], forward_lstmed[:, -4:-1, :]], axis=-1)
+            right_side = tf.reverse(backward_lstmed[:, -4:-1, :], axis=[1])
             right_doubled_side = tf.concat([right_side, right_side], axis=-1)
             total_gaps = tf.concat([left_doubled_side, concat_gaps, right_doubled_side], axis=1)
 
