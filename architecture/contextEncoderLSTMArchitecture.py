@@ -80,8 +80,8 @@ class ContextEncoderLSTMArchitecture(Architecture):
             backward_context = tf.reverse(context[:, :, :, 1], axis=[1])
 
             #normalize
-            normal_forward_context = tf.map_fn(self.normalize, forward_context)
-            normal_backward_context = tf.map_fn(self.normalize, backward_context)
+            normal_forward_context = tf.layers.batch_normalization(forward_context, training=self._isTraining)
+            normal_backward_context = tf.layers.batch_normalization(backward_context, training=self._isTraining)
 
             #run through network
             forward_lstmed, forward_states = self._lstmNetwork(normal_forward_context, None, reuse, 'forward_lstm')
