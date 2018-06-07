@@ -63,14 +63,14 @@ class ContextEncoderLSTMArchitecture(Architecture):
     def normalize(self, data):
         maxim = tf.reduce_max(data)
         minim = tf.reduce_min(data)
-        normed = (data-minim)/(maxim-minim)
+        normed = (data-minim)/(maxim-minim+1e-8)
         return normed
 
     def deNormalize(self, normalDataAndoriginalData):
         normalData, originalData = normalDataAndoriginalData[0], normalDataAndoriginalData[1]
         originalMax = tf.reduce_max(originalData)
         originalMin = tf.reduce_min(originalData)
-        unNormed = normalData*(originalMax-originalMin)+originalMin
+        unNormed = normalData*(originalMax-originalMin+1e-8)+originalMin
         return unNormed
 
     def _network(self, context, reuse=False):
