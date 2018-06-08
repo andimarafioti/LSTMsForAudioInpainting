@@ -6,7 +6,7 @@ from architecture.contextEncoderLSTMArchitecture import ContextEncoderLSTMArchit
 class DifferenceContextEncoderLSTMArchitecture(ContextEncoderLSTMArchitecture):
     def _lossGraph(self):
         with tf.variable_scope("Loss"):
-            _target = self._target[:, 1:] - self._target[:, 1:]
+            _target = self._target[:, 1:] - self._target[:, :-1]
 
             forward_reconstruction_loss = tf.reduce_sum(tf.square(_target - self._forwardPrediction[:, 1:]))
             backward_reconstruction_loss = tf.reduce_sum(tf.square(_target - self._backwardPrediction[:, 1:]))
