@@ -40,15 +40,24 @@ class ContextEncoderLSTMArchitecture(Architecture):
 
     def _lstmNetwork(self, data, initial_state, reuse, name):
         with tf.variable_scope(name, reuse=reuse):
-            # rnn_cell = tf.contrib.rnn.BasicLSTMCell(self._lstmParams.lstmSize())
+            dataset = tf.unstack(data, axis=-2)
+
+            with tf.variable_scope('linearInput', reuse=reuse):
+                weights = self._weight_variable([self._lstmParams.fftFreqBins(), self._lstmParams.fftFreqBins()])
+                biases = self._bias_variable([self._lstmParams.fftFreqBins()])
+
+                datasetAfterLinear = np.empty([0, self._lstmParams.batchSize(), self._lstmParams.fftFreqBins()], dtype=np.float32)
+                for data in dataset:
+                    mat_muled = tf.matmul(data, weights) + biases
+                    reshaped = tf.reshape(mat_muled, [-1, self._lstmParams.fftFreqBins()])
+                    datasetAfterLinear = tf.concat([datasetAfterLinear, [reshaped]], axis=0)
+            unstacked = tf.unstack(datasetAfterLinear, axis=0)
+
             rnn_cell = tf.contrib.rnn.MultiRNNCell(
                 [tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
                  tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
                  tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize())])
-
-            dataset = tf.unstack(data, axis=-2)
-
-            outputs, states = tf.nn.static_rnn(rnn_cell, dataset, initial_state=initial_state, dtype=tf.float32)
+            outputs, states = tf.nn.static_rnn(rnn_cell, unstacked, initial_state=initial_state, dtype=tf.float32)
 
             out_output = np.empty([data.shape[0], 0, self._lstmParams.fftFreqBins()])
             weights = self._weight_variable([self._lstmParams.lstmSize(), self._lstmParams.fftFreqBins()])
@@ -60,11 +69,11 @@ class ContextEncoderLSTMArchitecture(Architecture):
                 out_output = tf.concat([out_output, output], axis=1)
             return out_output, states
 
-    def normalize(self, data):
-        maxim = tf.reduce_max(data)
-        minim = tf.reduce_min(data)
-        normed = (data-minim)/(maxim-minim+1e-8)
-        return normed
+    # def normalize(self, data):
+    #     maxim = tf.reduce_max(data)
+    #     minim = tf.reduce_min(data)
+    #     normed = (data-minim)/(maxim-minim+1e-8)
+    #     return normed
 
     # def deNormalize(self, normalDataAndoriginalData):
     #     normalData, originalData = normalDataAndoriginalData[0], normalDataAndoriginalData[1]
