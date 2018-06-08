@@ -6,10 +6,12 @@ from architecture.contextEncoderLSTMArchitecture import ContextEncoderLSTMArchit
 class DifferenceContextEncoderLSTMArchitecture(ContextEncoderLSTMArchitecture):
     def _lossGraph(self):
         with tf.variable_scope("Loss"):
-            forward_reconstruction_loss = tf.reduce_sum(tf.square(self._target - self._forwardPrediction))
-            backward_reconstruction_loss = tf.reduce_sum(tf.square(self._target - self._backwardPrediction))
+            _target = self._target[:, 1:] - self._target[:, 1:]
 
-            reconstruction_loss = tf.reduce_sum(tf.square(self._target - self._output))
+            forward_reconstruction_loss = tf.reduce_sum(tf.square(_target - self._forwardPrediction[:, 1:]))
+            backward_reconstruction_loss = tf.reduce_sum(tf.square(_target - self._backwardPrediction[:, 1:]))
+
+            reconstruction_loss = tf.reduce_sum(tf.square(_target - self._output[:, 1:]))
 
             lossL2 = tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables()]) * 1e-5
             total_loss = tf.add_n([reconstruction_loss, lossL2])
@@ -69,8 +71,7 @@ class DifferenceContextEncoderLSTMArchitecture(ContextEncoderLSTMArchitecture):
             self._forwardPrediction = forwards_gap
             self._backwardPrediction = backwards_gap
 
-            output = context[:, -1, :, 0]
-            output = tf.expand_dims(output, axis=1)
+            output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
 
             concat_gaps = tf.concat([forwards_gap, backwards_gap], axis=-1)
             left_side = forward_lstmed[:, -4:-1, :]
@@ -83,7 +84,6 @@ class DifferenceContextEncoderLSTMArchitecture(ContextEncoderLSTMArchitecture):
                 intermediate_output = tf.reshape(total_gaps[:, i:i+7, :], (self._lstmParams.batchSize(),
                                                                            7*2*self._lstmParams.fftFreqBins()))
                 intermediate_output = tf.matmul(intermediate_output, mixing_variables)
-                intermediate_output = output[:, -1] + intermediate_output
                 intermediate_output = tf.expand_dims(intermediate_output, axis=1)
                 output = tf.concat([output, intermediate_output], axis=1)
-            return output[:, 1:]
+            return output
