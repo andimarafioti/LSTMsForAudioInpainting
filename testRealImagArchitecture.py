@@ -7,7 +7,7 @@ from system.realImagContextLSTMSystem import RealImagContextLSTMSystem
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-sessionsName = "batchSize128_"
+sessionsName = "batchSize256_"
 
 params = LstmContextInpaintingParameters(lstmSize=512, batchSize=256, signalLength=5120, inputChannels=4,
 										 gapLength=1024, fftWindowLength=512, fftHopSize=128)
