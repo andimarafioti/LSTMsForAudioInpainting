@@ -62,7 +62,7 @@ class ContextEncoderLSTMArchitecture(Architecture):
 
             for output in outputs:
                 mat_muled = tf.matmul(output, weights) + biases
-                output = tf.reshape(mat_muled, [-1, 1, self._lstmParams.fftFreqBins()])
+                output = tf.expand_dims(mat_muled, axis=1)
                 out_output = tf.concat([out_output, output], axis=1)
             return out_output, states
 
