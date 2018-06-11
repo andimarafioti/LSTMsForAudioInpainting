@@ -1,89 +1,27 @@
 import tensorflow as tf
-import numpy as np
 from architecture.contextEncoderLSTMArchitecture import ContextEncoderLSTMArchitecture
 
 
 class DifferenceContextEncoderLSTMArchitecture(ContextEncoderLSTMArchitecture):
-    def _lossGraph(self):
-        with tf.variable_scope("Loss"):
-            _target = self._target[:, 1:] - self._target[:, :-1]
+    def _lstmNetwork(self, data, initial_state, reuse, name):
+        with tf.variable_scope(name, reuse=reuse):
+            dataset = tf.unstack(data, axis=-2)
 
-            forward_reconstruction_loss = tf.reduce_sum(tf.square(_target - self._forwardPrediction[:, 1:]))
-            backward_reconstruction_loss = tf.reduce_sum(tf.square(_target - self._backwardPrediction[:, 1:]))
+            rnn_cell = tf.contrib.rnn.MultiRNNCell(
+                [tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
+                 tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
+                 tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize())])
+            outputs, states = tf.nn.static_rnn(rnn_cell, dataset, initial_state=initial_state, dtype=tf.float32)
 
-            reconstruction_loss = tf.reduce_sum(tf.square(_target - self._output[:, 1:]))
+            weights = self._weight_variable([self._lstmParams.lstmSize(), self._lstmParams.fftFreqBins()])
+            biases = self._bias_variable([self._lstmParams.fftFreqBins()])
 
-            lossL2 = tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables()]) * 1e-5
-            total_loss = tf.add_n([reconstruction_loss, lossL2])
+            mat_muled = tf.matmul(outputs[0], weights) + biases + dataset[-1]
+            output = tf.expand_dims(mat_muled, axis=1)
+            out_output = output
 
-            total_loss_summary = tf.summary.scalar("total_loss", total_loss)
-            l2_loss_summary = tf.summary.scalar("lossL2", lossL2)
-            rec_loss_summary = tf.summary.scalar("reconstruction_loss", reconstruction_loss)
-            frec_loss_summary = tf.summary.scalar("forw_reconstruction_loss", forward_reconstruction_loss)
-            brec_loss_summary = tf.summary.scalar("back_reconstruction_loss", backward_reconstruction_loss)
-            self._lossSummaries = tf.summary.merge([rec_loss_summary, l2_loss_summary, total_loss_summary,
-                                                    frec_loss_summary, brec_loss_summary])
-
-            return total_loss
-
-    def _network(self, context, reuse=False):
-        real_context = tf.stack([context[:, :, :, 0], context[:, :, :, 2]], axis=-1)
-        imag_context = tf.stack([context[:, :, :, 1], context[:, :, :, 3]], axis=-1)
-        real = self.__network(real_context, reuse)
-        real_forward = self._forwardPrediction
-        real_backward = self._backwardPrediction
-        imag = self.__network(imag_context, True)
-        imag_forward = self._forwardPrediction
-        imag_backward = self._backwardPrediction
-        self._forwardPrediction = tf.stack([real_forward, imag_forward], axis=-1)
-        self._backwardPrediction = tf.stack([real_backward, imag_backward], axis=-1)
-
-        return tf.stack([real, imag], axis=-1)
-
-    def __network(self, context, reuse=False):
-        with tf.variable_scope("Network", reuse=reuse):
-            #prepare data
-            forward_context = context[:, :, :, 0]
-            forward_context = forward_context[:, 1:] - forward_context[:, :-1]
-            backward_context = tf.reverse(context[:, :, :, 1], axis=[1])
-            backward_context = -1 * (backward_context[:, 1:] - backward_context[:, :-1])
-
-            #run through network
-            forward_lstmed, forward_states = self._lstmNetwork(forward_context, None, reuse, 'forward_lstm')
-            backward_lstmed, backward_states = self._lstmNetwork(backward_context, None, reuse, 'backward_lstm')
-
-            forwards_gap = forward_lstmed[:, -1:, :]
-            backwards_gap = backward_lstmed[:, -1:, :]
-
-            for i in range(1, int(self._lstmParams.gapStftFrameCount())):
-                next_frame, forward_states = self._lstmNetwork(forwards_gap[:, -1:, :], forward_states, True, 'forward_lstm')
-                forwards_gap = tf.concat([forwards_gap, next_frame], axis=1)
-
-                previous_frame, backward_states = self._lstmNetwork(backwards_gap[:, -1:, :], backward_states, True, 'backward_lstm')
-                backwards_gap = tf.concat([backwards_gap, previous_frame], axis=1)
-
-            #PostProcess LSTMed data
-            backwards_gap = tf.reverse(backwards_gap, axis=[1])
-
-            #mix the two predictions
-            mixing_variables = self._weight_variable([7*2*self._lstmParams.fftFreqBins(),
-                                                      self._lstmParams.fftFreqBins()])
-            self._forwardPrediction = forwards_gap
-            self._backwardPrediction = backwards_gap
-
-            output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
-
-            concat_gaps = tf.concat([forwards_gap, backwards_gap], axis=-1)
-            left_side = forward_lstmed[:, -4:-1, :]
-            left_doubled_side = tf.concat([left_side, left_side], axis=-1)
-
-            right_side = tf.reverse(backward_lstmed[:, -4:-1, :], axis=[1])
-            right_doubled_side = tf.concat([right_side, right_side], axis=-1)
-            total_gaps = tf.concat([left_doubled_side, concat_gaps, right_doubled_side], axis=1)
-            for i in range(int(self._lstmParams.gapStftFrameCount())):
-                intermediate_output = tf.reshape(total_gaps[:, i:i+7, :], (self._lstmParams.batchSize(),
-                                                                           7*2*self._lstmParams.fftFreqBins()))
-                intermediate_output = tf.matmul(intermediate_output, mixing_variables)
-                intermediate_output = tf.expand_dims(intermediate_output, axis=1)
-                output = tf.concat([output, intermediate_output], axis=1)
-            return output
+            for output in outputs[1:]:
+                mat_muled = tf.matmul(output, weights) + biases + out_output[:, -1]
+                output = tf.expand_dims(mat_muled, axis=1)
+                out_output = tf.concat([out_output, output], axis=1)
+            return out_output, states
