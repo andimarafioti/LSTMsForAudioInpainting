@@ -27,18 +27,20 @@ class LSTMSystem(DNNSystem):
             saver.restore(sess, path)
             print("Model restored.")
             sess.run([tf.local_variables_initializer()])
-            reconstructed, out_gaps = self._reconstruct(sess, aBatchOfSignals)
-            return reconstructed, out_gaps
+            return self._reconstruct(sess, aBatchOfSignals)
 
     def _reconstruct(self, sess, aBatchOfSignals):
         reconstructed = StrechableNumpyArray()
         out_gaps = StrechableNumpyArray()
+        inputs = StrechableNumpyArray()
         for batch_num in range(int(len(aBatchOfSignals)/self._batchSize)):
             feed_dict = self._feedDict(aBatchOfSignals[batch_num*self._batchSize:(batch_num+1)*self._batchSize], sess, False)
-            reconstructed_input, original = sess.run([self._architecture.output(), self._architecture.target()],
+            reconstructed_input, original, inputed = sess.run([self._architecture.output(), self._architecture.target(),
+                                                      self._architecture.input()],
                                                      feed_dict=feed_dict)
             out_gaps.append(np.reshape(original, (-1)))
             reconstructed.append(np.reshape(reconstructed_input, (-1)))
+            inputs.append(np.reshape(inputed, (-1)))
 
         output_shape = self._architecture.output().shape.as_list()
         output_shape[0] = -1
@@ -46,8 +48,10 @@ class LSTMSystem(DNNSystem):
         reconstructed = np.reshape(reconstructed, output_shape)
         out_gaps = out_gaps.finalize()
         out_gaps = np.reshape(out_gaps, output_shape)
+        inputs = inputs.finalize()
+        inputs = np.reshape(inputs, output_shape)
 
-        return reconstructed, out_gaps
+        return reconstructed, out_gaps, inputs
 
     def optimizer(self, learningRate):
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
