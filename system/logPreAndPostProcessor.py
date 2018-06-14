@@ -8,10 +8,10 @@ __author__ = 'Andres'
 class LogPreAndPostProcessor(PreAndPostProcessor):
     def _divideComplexIntoRealAndImag(self, complexTensor):
         magnitude = tf.abs(complexTensor)
-        croppedMagnitude = tf.maximum(magnitude, 1e-4)
+        croppedMagnitude = tf.maximum(magnitude, 1e-1)
         logMagnitude = tf.log(croppedMagnitude) / tf.log(tf.constant(10, dtype=croppedMagnitude.dtype))
         maxLogMag = 2
-        minLogMag = -4
+        minLogMag = -1
         outputMagnitude = (logMagnitude - minLogMag) / (maxLogMag - minLogMag)
 
         angle = tf.angle(complexTensor)
@@ -28,7 +28,7 @@ class LogPreAndPostProcessor(PreAndPostProcessor):
         angle = tf.sign(tf.asin(y / (shifted_logmagnitude))) * tf.acos(x / (shifted_logmagnitude))
 
         maxLogMag = 2
-        minLogMag = -4
+        minLogMag = -1
 
         recenteredMag = (shifted_logmagnitude * (maxLogMag - minLogMag)) + minLogMag
         magnitude = (10 ** recenteredMag)
