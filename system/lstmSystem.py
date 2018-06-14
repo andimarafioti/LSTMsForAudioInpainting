@@ -32,7 +32,10 @@ class LSTMSystem(DNNSystem):
     def _reconstruct(self, sess, aBatchOfSignals):
         reconstructed = StrechableNumpyArray()
         out_gaps = StrechableNumpyArray()
-        contexts = StrechableNumpyArray()
+        input_shape = self._architecture.input().shape.as_list()
+        input_shape[0] = 0
+        contexts = np.empty(input_shape)
+
         for batch_num in range(int(len(aBatchOfSignals)/self._batchSize)):
             feed_dict = self._feedDict(aBatchOfSignals[batch_num*self._batchSize:(batch_num+1)*self._batchSize], sess, False)
             reconstructed_input, original, context = sess.run([self._architecture.output(), self._architecture.target(),
@@ -40,16 +43,14 @@ class LSTMSystem(DNNSystem):
                                                      feed_dict=feed_dict)
             out_gaps.append(np.reshape(original, (-1)))
             reconstructed.append(np.reshape(reconstructed_input, (-1)))
-            contexts.append(np.reshape(context, (-1)))
+            contexts = np.concatenate([contexts, context], axis=0)
 
         output_shape = self._architecture.output().shape.as_list()
-        output_shape[0] = -1
+        output_shape[0] = (batch_num+1) * self._batchSize
         reconstructed = reconstructed.finalize()
         reconstructed = np.reshape(reconstructed, output_shape)
         out_gaps = out_gaps.finalize()
         out_gaps = np.reshape(out_gaps, output_shape)
-        contexts = contexts.finalize()
-        contexts = np.reshape(contexts, output_shape)
 
         return reconstructed, out_gaps, contexts
 
