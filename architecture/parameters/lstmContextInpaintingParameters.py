@@ -1,12 +1,12 @@
 class LstmContextInpaintingParameters(object):
     def __init__(self, lstmSize, batchSize, signalLength, inputChannels, gapLength, fftWindowLength, fftHopSize):
-        self._signalLength = signalLength
-        self._gapLength = gapLength
-        self._batchSize = batchSize
-        self._inputChannels = inputChannels
-        self._lstmSize = lstmSize
-        self._fftWindowLength = fftWindowLength
-        self._fftHopSize = fftHopSize
+        self._signalLength = int(signalLength)
+        self._gapLength = int(gapLength)
+        self._batchSize = int(batchSize)
+        self._inputChannels = int(inputChannels)
+        self._lstmSize = int(lstmSize)
+        self._fftWindowLength = int(fftWindowLength)
+        self._fftHopSize = int(fftHopSize)
 
     def preAndPostProcessorParams(self):
         return self._signalLength, self._gapLength, self._fftWindowLength, self._fftHopSize
@@ -27,7 +27,7 @@ class LstmContextInpaintingParameters(object):
         return self._lstmSize
 
     def _frameCountForSignalLength(self, length):
-        return ((length - self._fftWindowLength) / self._fftHopSize) + 1
+        return int(((length - self._fftWindowLength) / self._fftHopSize) + 1)
 
     def padding(self):
         return self._fftWindowLength - self._fftHopSize
@@ -39,7 +39,7 @@ class LstmContextInpaintingParameters(object):
         return self._frameCountForSignalLength((self._signalLength - self._gapLength) / 2)
 
     def fftFreqBins(self):
-        return self._fftWindowLength // 2 + 1
+        return int(self._fftWindowLength // 2 + 1)
 
     def fftFrames(self):
         return (self._signalLength - self._fftWindowLength) / self._fftHopSize + 1
