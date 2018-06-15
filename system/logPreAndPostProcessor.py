@@ -11,7 +11,7 @@ class LogPreAndPostProcessor(PreAndPostProcessor):
 
     def _divideComplexIntoRealAndImag(self, complexTensor):
         magnitude = tf.abs(complexTensor)
-        croppedMagnitude = tf.maximum(magnitude, 1e-1)
+        croppedMagnitude = tf.maximum(magnitude, 10**self.MIN_LOG)
         logMagnitude = tf.log(croppedMagnitude) / tf.log(tf.constant(10, dtype=croppedMagnitude.dtype))
         outputMagnitude = (logMagnitude - self.MIN_LOG) / (self.MAX_LOG - self.MIN_LOG)
 
