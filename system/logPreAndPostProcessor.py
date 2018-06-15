@@ -28,9 +28,6 @@ class LogPreAndPostProcessor(PreAndPostProcessor):
 
         angle = tf.sign(tf.asin(y / (shifted_logmagnitude))) * tf.acos(x / (shifted_logmagnitude))
 
-        maxLogMag = 2
-        minLogMag = -2
-
         recenteredMag = (shifted_logmagnitude * (self.MAX_LOG - self.MIN_LOG)) + self.MIN_LOG
         magnitude = (10 ** recenteredMag)
 
