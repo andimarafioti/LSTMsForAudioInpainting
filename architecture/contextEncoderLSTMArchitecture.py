@@ -96,10 +96,12 @@ class ContextEncoderLSTMArchitecture(Architecture):
 
     def _mixingNetwork(self, total_gaps, reuse):
         with tf.variable_scope("mix", reuse=reuse):
-            mixing_variables = self._weight_variable([self._lstmParams.batchSize(), 2, 1])
+            mixing_variables = self._weight_variable([self._lstmParams.fftFreqBins()*2,
+                                                      self._lstmParams.fftFreqBins()*1])
             output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
             for i in range(total_gaps.shape[1]):
-                intermediate_output = total_gaps[:, i]
+                intermediate_output = tf.reshape(total_gaps[:, i], (self._lstmParams.batchSize(),
+                                                                    self._lstmParams.fftFreqBins()*2))
                 intermediate_output = tf.matmul(intermediate_output, mixing_variables)
                 intermediate_output = tf.reshape(intermediate_output, [self._lstmParams.batchSize(), 1,
                                                                        self._lstmParams.fftFreqBins()])
@@ -108,11 +110,13 @@ class ContextEncoderLSTMArchitecture(Architecture):
 
     def _predictNetwork(self, mixed_gaps, reuse):
         with tf.variable_scope("predict", reuse=reuse):
-            mixing_variables = self._weight_variable([self._lstmParams.batchSize(), 1, 7])
+            mixing_variables = self._weight_variable([self._lstmParams.fftFreqBins()*7, self._lstmParams.fftFreqBins()])
             output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
             for i in range(self._lstmParams.gapStftFrameCount()):
-                intermediate_output = mixed_gaps[:, i:i+7]
-                intermediate_output = tf.matmul(mixing_variables, intermediate_output)
+                intermediate_output = tf.reshape(mixed_gaps[:, i:i+7], (self._lstmParams.batchSize(),
+                                                                        self._lstmParams.fftFreqBins()*7))
+                intermediate_output = tf.matmul(intermediate_output, mixing_variables)
+                intermediate_output = tf.expand_dims(intermediate_output, axis=1)
                 output = tf.concat([output, intermediate_output], axis=1)
             return output
 
