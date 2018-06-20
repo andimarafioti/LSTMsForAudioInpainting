@@ -102,29 +102,6 @@ class ContextEncoderLSTMArchitecture(Architecture):
                 output = tf.concat([output, intermediate_output], axis=1)
             return output
 
-            # with tf.variable_scope('forward', reuse=reuse):
-            #     mixing_forward_variables = self._weight_variable(
-            #         [self._lstmParams.gapStftFrameCount(), self._lstmParams.fftFreqBins(), self._lstmParams.fftFreqBins()])
-            # with tf.variable_scope('backward', reuse=reuse):
-            #     mixing_backward_variables = self._weight_variable(
-            #         [self._lstmParams.gapStftFrameCount(), self._lstmParams.fftFreqBins(), self._lstmParams.fftFreqBins()])
-            #
-            # self._forwardVars = mixing_forward_variables
-            # self._backwardVars = mixing_backward_variables
-            #
-            # self._forwardPrediction = forwards_gap
-            # self._backwardPrediction = backwards_gap
-            #
-            # output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
-            #
-            # for i in range(int(self._lstmParams.gapStftFrameCount())):
-            #     intermediate_output = tf.matmul(forwards_gap[:, i, :], mixing_forward_variables[i]) + tf.matmul(
-            #         backwards_gap[:, i, :], mixing_backward_variables[i])
-            #     intermediate_output = tf.expand_dims(intermediate_output, axis=1)
-            #     output = tf.concat([output, intermediate_output], axis=1)
-            #
-            # return output
-
     def _weight_variable(self, shape):
         return tf.get_variable('W', shape, initializer=tf.contrib.layers.xavier_initializer())
 
