@@ -55,28 +55,11 @@ class ContextEncoderLSTMArchitecture(Architecture):
                 out_output = tf.concat([out_output, output], axis=1)
             return out_output, states
 
-    # def normalize(self, data):
-    #     maxim = tf.reduce_max(data)
-    #     minim = tf.reduce_min(data)
-    #     normed = (data-minim)/(maxim-minim+1e-8)
-    #     return normed
-
-    # def deNormalize(self, normalDataAndoriginalData):
-    #     normalData, originalData = normalDataAndoriginalData[0], normalDataAndoriginalData[1]
-    #     originalMax = tf.reduce_max(originalData)
-    #     originalMin = tf.reduce_min(originalData)
-    #     unNormed = normalData*(originalMax-originalMin+1e-8)+originalMin
-    #     return unNormed
-
     def _network(self, context, reuse=False):
         with tf.variable_scope("Network", reuse=reuse):
             #prepare data
             forward_context = context[:, :, :, 0]
             backward_context = tf.reverse(context[:, :, :, 1], axis=[1])
-
-            #normalize
-            # normal_forward_context = tf.layers.batch_normalization(forward_context, training=self._isTraining)
-            # normal_backward_context = tf.layers.batch_normalization(backward_context, training=self._isTraining)
 
             #run through network
             forward_lstmed, forward_states = self._lstmNetwork(forward_context, None, reuse, 'forward_lstm')
