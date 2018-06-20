@@ -83,15 +83,12 @@ class ContextEncoderLSTMArchitecture(Architecture):
             self._backwardPrediction = backwards_gap
 
             concat_gaps = tf.stack([forwards_gap, backwards_gap], axis=-1)
+            mixed_gaps = self._mixingNetwork(concat_gaps, reuse)
+
             left_side = forward_lstmed[:, -4:-1, :]
-            left_doubled_side = tf.stack([left_side, left_side], axis=-1)
-
             right_side = tf.reverse(backward_lstmed[:, -4:-1, :], axis=[1])
-            right_doubled_side = tf.stack([right_side, right_side], axis=-1)
-            total_gaps = tf.concat([left_doubled_side, concat_gaps, right_doubled_side], axis=1)
-            mixed_gaps = self._mixingNetwork(total_gaps, reuse)
-
-            predictedFrames = self._predictNetwork(mixed_gaps, reuse)
+            total_gaps = tf.concat([left_side, mixed_gaps, right_side], axis=1)
+            predictedFrames = self._predictNetwork(total_gaps, reuse)
             return predictedFrames
 
     def _mixingNetwork(self, total_gaps, reuse):
