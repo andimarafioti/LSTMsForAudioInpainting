@@ -123,20 +123,24 @@ class ContextEncoderLSTMArchitecture(Architecture):
     def _predictNetwork(self, mixed_gaps, reuse):
         with tf.variable_scope("predict", reuse=reuse):
             mixed_gaps = tf.expand_dims(mixed_gaps, axis=-1)
-            graph = EmptyTfGraph([self._lstmParams.batchSize(), 7, self._lstmParams.fftFreqBins(), 1], self._isTraining,
-                                 'predict')
-            graph.addConvLayer(filter_shape=[5, 5], input_channels=1, output_channels=4, stride=(1, 2, 1, 1),
-                               name='First')
-            graph.addConvLayer(filter_shape=[3, 5], input_channels=4, output_channels=2, stride=(1, 2, 1, 1),
-                               name='Second')
-            graph.addConvLayer(filter_shape=[2, 3], input_channels=2, output_channels=1, stride=(1, 2, 1, 1),
-                               name='Third')
-            graph.addReshape([self._lstmParams.batchSize(), 1,
-                              self._lstmParams.fftFreqBins()])
+
+            with tf.variable_scope('first', reuse=reuse):
+                first_layer_filters = self._weight_variable([5, 5, 1, 4])
+            with tf.variable_scope('second', reuse=reuse):
+                second_layer_filters = self._weight_variable([3, 5, 4, 2])
+            with tf.variable_scope('third', reuse=reuse):
+                third_layer_filters = self._weight_variable([2, 3, 2, 1])
+
             output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
             for i in range(self._lstmParams.gapStftFrameCount()):
-                graph._input = tf.expand_dims(mixed_gaps[:, i:i + 7], axis=-1)
-                output = tf.concat([output, graph.output()], axis=1)
+                input = mixed_gaps[:, i:i + 7]
+                first_conv = tf.nn.conv2d(input, first_layer_filters, strides=(1, 2, 1, 1), padding="SAME")
+                second_conv = tf.nn.conv2d(first_conv, second_layer_filters, strides=(1, 2, 1, 1), padding="SAME")
+                third_conv = tf.nn.conv2d(second_conv, third_layer_filters, strides=(1, 2, 1, 1), padding="SAME")
+                output = tf.concat([output,
+                                    tf.reshape(third_conv,
+                                               [self._lstmParams.batchSize(), 1, self._lstmParams.fftFreqBins()])],
+                                   axis=1)
             return output
 
             # mixing_variables = self._weight_variable(
