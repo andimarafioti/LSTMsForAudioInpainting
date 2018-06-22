@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from architecture.architecture import Architecture
+from network.emptyTFGraph import EmptyTfGraph
 from network.tfGraph import TFGraph
 
 
@@ -122,16 +123,21 @@ class ContextEncoderLSTMArchitecture(Architecture):
     def _predictNetwork(self, mixed_gaps, reuse):
         with tf.variable_scope("predict", reuse=reuse):
             mixed_gaps = tf.expand_dims(mixed_gaps, axis=-1)
-            graph = TFGraph(mixed_gaps, self._isTraining, 'predict')
-            graph.addConvLayer(filter_shape=[3, 3], input_channels=1, output_channels=4, stride=(1, 1, 1, 1),
+            graph = EmptyTfGraph([self._lstmParams.batchSize(), 7, self._lstmParams.fftFreqBins(), 1], self._isTraining,
+                                 'predict')
+            graph.addConvLayer(filter_shape=[5, 5], input_channels=1, output_channels=4, stride=(1, 2, 1, 1),
                                name='First')
-            graph.addConvLayer(filter_shape=[5, 5], input_channels=4, output_channels=2, stride=(1, 1, 1, 1),
+            graph.addConvLayer(filter_shape=[3, 5], input_channels=4, output_channels=2, stride=(1, 2, 1, 1),
                                name='Second')
-            graph.addConvLayer(filter_shape=[3, 3], input_channels=2, output_channels=1, stride=(1, 1, 1, 1),
+            graph.addConvLayer(filter_shape=[2, 3], input_channels=2, output_channels=1, stride=(1, 2, 1, 1),
                                name='Third')
-            graph.addReshape([self._lstmParams.batchSize(), self._lstmParams.gapStftFrameCount()+6,
+            graph.addReshape([self._lstmParams.batchSize(), 1,
                               self._lstmParams.fftFreqBins()])
-            return graph.output()[:, 3:-3, :]
+            output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
+            for i in range(self._lstmParams.gapStftFrameCount()):
+                graph._input = tf.expand_dims(mixed_gaps[:, i:i + 7], axis=-1)
+                output = tf.concat([output, graph.output()], axis=1)
+            return output
 
             # mixing_variables = self._weight_variable(
             #     [self._lstmParams.fftFreqBins() * 7, self._lstmParams.fftFreqBins()])
