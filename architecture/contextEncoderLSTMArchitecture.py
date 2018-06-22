@@ -97,40 +97,52 @@ class ContextEncoderLSTMArchitecture(Architecture):
 
     def _mixingNetwork(self, total_gaps, reuse):
         with tf.variable_scope("mix", reuse=reuse):
-            graph = TFGraph(total_gaps, self._isTraining, 'mix')
-            graph.addConvLayer(filter_shape=[3, 3], input_channels=2, output_channels=2, stride=(1, 1, 1, 1),
-                               name='First')
-            graph.addConvLayer(filter_shape=[5, 5], input_channels=2, output_channels=1, stride=(1, 1, 1, 1),
-                               name='Second')
-            graph.addReshape([self._lstmParams.batchSize(), self._lstmParams.gapStftFrameCount(),
-                             self._lstmParams.fftFreqBins()])
-            return graph.output()
-
-
-            # mixing_variables = self._weight_variable([self._lstmParams.fftFreqBins()*2,
-            #                                           self._lstmParams.fftFreqBins()*1])
-            # output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
-            # for i in range(total_gaps.shape[1]):
-            #     intermediate_output = tf.reshape(total_gaps[:, i], (self._lstmParams.batchSize(),
-            #                                                         self._lstmParams.fftFreqBins()*2))
-            #     intermediate_output = tf.matmul(intermediate_output, mixing_variables)
-            #     intermediate_output = tf.reshape(intermediate_output, [self._lstmParams.batchSize(), 1,
-            #                                                            self._lstmParams.fftFreqBins()])
-            #     output = tf.concat([output, intermediate_output], axis=1)
-            # return output
+            # graph = TFGraph(total_gaps, self._isTraining, 'mix')
+            # graph.addConvLayer(filter_shape=[3, 3], input_channels=2, output_channels=2, stride=(1, 1, 1, 1),
+            #                    name='First')
+            # graph.addConvLayer(filter_shape=[5, 5], input_channels=2, output_channels=1, stride=(1, 1, 1, 1),
+            #                    name='Second')
+            # graph.addReshape([self._lstmParams.batchSize(), self._lstmParams.gapStftFrameCount(),
+            #                  self._lstmParams.fftFreqBins()])
+            # return graph.output()
+            #
+            #
+            mixing_variables = self._weight_variable([self._lstmParams.fftFreqBins()*2,
+                                                      self._lstmParams.fftFreqBins()*1])
+            output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
+            for i in range(total_gaps.shape[1]):
+                intermediate_output = tf.reshape(total_gaps[:, i], (self._lstmParams.batchSize(),
+                                                                    self._lstmParams.fftFreqBins()*2))
+                intermediate_output = tf.matmul(intermediate_output, mixing_variables)
+                intermediate_output = tf.reshape(intermediate_output, [self._lstmParams.batchSize(), 1,
+                                                                       self._lstmParams.fftFreqBins()])
+                output = tf.concat([output, intermediate_output], axis=1)
+            return output
 
     def _predictNetwork(self, mixed_gaps, reuse):
         with tf.variable_scope("predict", reuse=reuse):
-            mixing_variables = self._weight_variable(
-                [self._lstmParams.fftFreqBins() * 7, self._lstmParams.fftFreqBins()])
-            output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
-            for i in range(self._lstmParams.gapStftFrameCount()):
-                intermediate_output = tf.reshape(mixed_gaps[:, i:i + 7], (self._lstmParams.batchSize(),
-                                                                          self._lstmParams.fftFreqBins() * 7))
-                intermediate_output = tf.matmul(intermediate_output, mixing_variables)
-                intermediate_output = tf.expand_dims(intermediate_output, axis=1)
-                output = tf.concat([output, intermediate_output], axis=1)
-            return output
+            mixed_gaps = tf.expand_dims(mixed_gaps, axis=-1)
+            graph = TFGraph(mixed_gaps, self._isTraining, 'predict')
+            graph.addConvLayer(filter_shape=[3, 3], input_channels=1, output_channels=4, stride=(1, 1, 1, 1),
+                               name='First')
+            graph.addConvLayer(filter_shape=[5, 5], input_channels=4, output_channels=2, stride=(1, 1, 1, 1),
+                               name='Second')
+            graph.addConvLayer(filter_shape=[3, 3], input_channels=2, output_channels=1, stride=(1, 1, 1, 1),
+                               name='Third')
+            graph.addReshape([self._lstmParams.batchSize(), self._lstmParams.gapStftFrameCount()+6,
+                              self._lstmParams.fftFreqBins()])
+            return graph.output()[:, 3:-3, :]
+
+            # mixing_variables = self._weight_variable(
+            #     [self._lstmParams.fftFreqBins() * 7, self._lstmParams.fftFreqBins()])
+            # output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
+            # for i in range(self._lstmParams.gapStftFrameCount()):
+            #     intermediate_output = tf.reshape(mixed_gaps[:, i:i + 7], (self._lstmParams.batchSize(),
+            #                                                               self._lstmParams.fftFreqBins() * 7))
+            #     intermediate_output = tf.matmul(intermediate_output, mixing_variables)
+            #     intermediate_output = tf.expand_dims(intermediate_output, axis=1)
+            #     output = tf.concat([output, intermediate_output], axis=1)
+            # return output
 
     def _weight_variable(self, shape):
         return tf.get_variable('W', shape, initializer=tf.contrib.layers.xavier_initializer())
