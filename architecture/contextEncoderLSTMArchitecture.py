@@ -122,37 +122,37 @@ class ContextEncoderLSTMArchitecture(Architecture):
 
     def _predictNetwork(self, mixed_gaps, reuse):
         with tf.variable_scope("predict", reuse=reuse):
-            mixed_gaps = tf.expand_dims(mixed_gaps, axis=-1)
+        #     mixed_gaps = tf.expand_dims(mixed_gaps, axis=-1)
+        #
+        #     with tf.variable_scope('first', reuse=reuse):
+        #         first_layer_filters = self._weight_variable([5, 5, 1, 4])
+        #     with tf.variable_scope('second', reuse=reuse):
+        #         second_layer_filters = self._weight_variable([3, 5, 4, 2])
+        #     with tf.variable_scope('third', reuse=reuse):
+        #         third_layer_filters = self._weight_variable([2, 3, 2, 1])
+        #
+        #     output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
+        #     for i in range(self._lstmParams.gapStftFrameCount()):
+        #         input = mixed_gaps[:, i:i + 7]
+        #         first_conv = tf.nn.conv2d(input, first_layer_filters, strides=(1, 2, 1, 1), padding="SAME")
+        #         second_conv = tf.nn.conv2d(first_conv, second_layer_filters, strides=(1, 2, 1, 1), padding="SAME")
+        #         third_conv = tf.nn.conv2d(second_conv, third_layer_filters, strides=(1, 2, 1, 1), padding="SAME")
+        #         output = tf.concat([output,
+        #                             tf.reshape(third_conv,
+        #                                        [self._lstmParams.batchSize(), 1, self._lstmParams.fftFreqBins()])],
+        #                            axis=1)
+        #     return output
 
-            with tf.variable_scope('first', reuse=reuse):
-                first_layer_filters = self._weight_variable([5, 5, 1, 4])
-            with tf.variable_scope('second', reuse=reuse):
-                second_layer_filters = self._weight_variable([3, 5, 4, 2])
-            with tf.variable_scope('third', reuse=reuse):
-                third_layer_filters = self._weight_variable([2, 3, 2, 1])
-
+            mixing_variables = self._weight_variable(
+                [self._lstmParams.fftFreqBins() * 7, self._lstmParams.fftFreqBins()])
             output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
             for i in range(self._lstmParams.gapStftFrameCount()):
-                input = mixed_gaps[:, i:i + 7]
-                first_conv = tf.nn.conv2d(input, first_layer_filters, strides=(1, 2, 1, 1), padding="SAME")
-                second_conv = tf.nn.conv2d(first_conv, second_layer_filters, strides=(1, 2, 1, 1), padding="SAME")
-                third_conv = tf.nn.conv2d(second_conv, third_layer_filters, strides=(1, 2, 1, 1), padding="SAME")
-                output = tf.concat([output,
-                                    tf.reshape(third_conv,
-                                               [self._lstmParams.batchSize(), 1, self._lstmParams.fftFreqBins()])],
-                                   axis=1)
+                intermediate_output = tf.reshape(mixed_gaps[:, i:i + 7], (self._lstmParams.batchSize(),
+                                                                          self._lstmParams.fftFreqBins() * 7))
+                intermediate_output = tf.matmul(intermediate_output, mixing_variables)
+                intermediate_output = tf.expand_dims(intermediate_output, axis=1)
+                output = tf.concat([output, intermediate_output], axis=1)
             return output
-
-            # mixing_variables = self._weight_variable(
-            #     [self._lstmParams.fftFreqBins() * 7, self._lstmParams.fftFreqBins()])
-            # output = tf.zeros([self._lstmParams.batchSize(), 0, self._lstmParams.fftFreqBins()])
-            # for i in range(self._lstmParams.gapStftFrameCount()):
-            #     intermediate_output = tf.reshape(mixed_gaps[:, i:i + 7], (self._lstmParams.batchSize(),
-            #                                                               self._lstmParams.fftFreqBins() * 7))
-            #     intermediate_output = tf.matmul(intermediate_output, mixing_variables)
-            #     intermediate_output = tf.expand_dims(intermediate_output, axis=1)
-            #     output = tf.concat([output, intermediate_output], axis=1)
-            # return output
 
     def _weight_variable(self, shape):
         return tf.get_variable('W', shape, initializer=tf.contrib.layers.xavier_initializer())
