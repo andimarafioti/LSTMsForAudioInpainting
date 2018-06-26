@@ -41,7 +41,6 @@ class PreAndPostProcessor(object):
         assert len(aBatchOfSignals.shape) == 2
         leftAndRightSideStacked = self._removeGap(aBatchOfSignals)
         leftAndRightSideStackedAndPadded = self._addPaddingForStftOfContext(leftAndRightSideStacked)
-        print(leftAndRightSideStackedAndPadded.shape)
 
         realAndImagSTFTOfLeftSide = self._realAndImagSTFT(leftAndRightSideStackedAndPadded[:, 0])
         realAndImagSTFTOfRightSide = self._realAndImagSTFT(leftAndRightSideStackedAndPadded[:, 1])
@@ -58,7 +57,6 @@ class PreAndPostProcessor(object):
         """batchOfSides should contain the left side on the last dimension, first two channels
         and the right side on the second two"""
         overlap = self.windowOverlap()
-        print(overlap)
         if overlap < 1:
             paddedWindows = int(1 / overlap) - 1
             leftSideNoPadded = aBatchOfStft[:, :-paddedWindows, :, :2]
