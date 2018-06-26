@@ -26,6 +26,9 @@ class PreAndPostProcessor(object):
     def fftHopSize(self):
         return self._fftHopSize
 
+    def windowOverlap(self):
+        return self._fftHopSize / self._fftWindowLength
+
     def padding(self):
         return self._fftWindowLength - self._fftHopSize
 
@@ -38,6 +41,7 @@ class PreAndPostProcessor(object):
         assert len(aBatchOfSignals.shape) == 2
         leftAndRightSideStacked = self._removeGap(aBatchOfSignals)
         leftAndRightSideStackedAndPadded = self._addPaddingForStftOfContext(leftAndRightSideStacked)
+        print(leftAndRightSideStackedAndPadded.shape)
 
         realAndImagSTFTOfLeftSide = self._realAndImagSTFT(leftAndRightSideStackedAndPadded[:, 0])
         realAndImagSTFTOfRightSide = self._realAndImagSTFT(leftAndRightSideStackedAndPadded[:, 1])
@@ -53,9 +57,15 @@ class PreAndPostProcessor(object):
     def _removePaddedCoefs(self, aBatchOfStft):
         """batchOfSides should contain the left side on the last dimension, first two channels
         and the right side on the second two"""
-        leftSideNoPadded = aBatchOfStft[:, :-3, :, 0:2]
-        rightSideNoPadded = aBatchOfStft[:, 3:, :, 2:]
-        return tf.concat([leftSideNoPadded, rightSideNoPadded], axis=-1)
+        overlap = self.windowOverlap()
+        print(overlap)
+        if overlap < 1:
+            paddedWindows = int(1 / overlap) - 1
+            leftSideNoPadded = aBatchOfStft[:, :-paddedWindows, :, :2]
+            rightSideNoPadded = aBatchOfStft[:, paddedWindows:, :, 2:]
+            return tf.concat([leftSideNoPadded, rightSideNoPadded], axis=-1)
+        else:
+            return aBatchOfStft
 
     def inverseStftOfGap(self, batchOfStftOfGap):
         window_fn = functools.partial(window_ops.hann_window, periodic=True)
