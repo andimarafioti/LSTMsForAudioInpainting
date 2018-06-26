@@ -18,7 +18,7 @@ class DNNSystem(object):
     def _evaluate(self, summariesDict, feed_dict, validReader, sess):
         raise NotImplementedError("Subclass Responsibility")
 
-    def _loadReader(self, dataPath):
+    def _loadReader(self, dataPath, capacity=int(1e6)):
         raise NotImplementedError("Subclass Responsibility")
 
     def _evaluationSummaries(self):
