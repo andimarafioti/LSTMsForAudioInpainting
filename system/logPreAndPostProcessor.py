@@ -1,6 +1,7 @@
 import tensorflow as tf
 
 from system.preAndPostProcessor import PreAndPostProcessor
+import numpy as np
 
 __author__ = 'Andres'
 
@@ -24,14 +25,14 @@ class LogPreAndPostProcessor(PreAndPostProcessor):
         x = tensor[:, :, :, 0]
         y = tensor[:, :, :, 1]
 
-        shifted_logmagnitude = tf.sqrt(tf.square(x) + tf.square(y))
+        shifted_logmagnitude = np.sqrt(np.square(x) + np.square(y))
 
-        angle = tf.sign(tf.asin(y / (shifted_logmagnitude))) * tf.acos(x / (shifted_logmagnitude))
+        angle = np.sign(np.arcsin(y / (shifted_logmagnitude))) * np.arccos(x / (shifted_logmagnitude))
 
         recenteredMag = (shifted_logmagnitude * (self.MAX_LOG - self.MIN_LOG)) + self.MIN_LOG
         magnitude = (10 ** recenteredMag)
 
-        real_part = magnitude * tf.cos(angle)
-        imag_part = magnitude * tf.sin(angle)
+        real_part = magnitude * np.cos(angle)
+        imag_part = magnitude * np.sin(angle)
 
-        return tf.stack([real_part, imag_part], axis=-1, name='divideComplexIntoRealAndImag')
+        return np.stack([real_part, imag_part], axis=-1)
