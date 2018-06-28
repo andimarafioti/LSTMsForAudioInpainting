@@ -18,4 +18,4 @@ aPreProcessor = PreAndPostProcessor(params)
 
 aContextEncoderSystem = RealImagContextLSTMSystem(contextArchitecture, aPreProcessor, params, sessionsName)
 
-aContextEncoderSystem.train("../../aDataset/nsynth_train_w12288_g4096_h512.tfrecords", "../../aDataset/nsynth_valid_w6144_g2048_h512.tfrecords", 1e-3)
+aContextEncoderSystem.train("../../aDataset/nsynth_train_w12288_g4096_h512.tfrecords", "../../aDataset/nsynth_valid_w12288_g4096_h512.tfrecords", 1e-3)
