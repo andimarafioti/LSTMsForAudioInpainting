@@ -40,22 +40,21 @@ class ContextEncoderLSTMArchitecture(Architecture):
 
     def _lstmNetwork(self, data, initial_state, reuse, name):
         with tf.variable_scope(name, reuse=reuse):
-            dataset = tf.unstack(data, axis=-2)
+            data = tf.expand_dims(data, axis=-1)
+            dataset = tf.unstack(data, axis=1)
 
             rnn_cell = tf.contrib.rnn.MultiRNNCell(
-                [tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
-                 tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
-                 tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize())])
+                [tf.contrib.rnn.ConvLSTMCell(conv_ndims=1, input_shape=[self._lstmParams.fftFreqBins(), 1],
+                                             output_channels=5, kernel_shape=[7]),
+                 tf.contrib.rnn.ConvLSTMCell(conv_ndims=1, input_shape=[self._lstmParams.fftFreqBins(), 5],
+                                             output_channels=5, kernel_shape=[7]),
+                 tf.contrib.rnn.ConvLSTMCell(conv_ndims=1, input_shape=[self._lstmParams.fftFreqBins(), 5],
+                                             output_channels=1, kernel_shape=[7])])
             outputs, states = tf.nn.static_rnn(rnn_cell, dataset, initial_state=initial_state, dtype=tf.float32)
 
             out_output = np.empty([data.shape[0], 0, self._lstmParams.fftFreqBins()])
-            weights = self._weight_variable([self._lstmParams.lstmSize(), self._lstmParams.fftFreqBins()])
-            biases = self._bias_variable([self._lstmParams.fftFreqBins()])
-
             for output in outputs:
-                mat_muled = tf.matmul(output, weights) + biases
-                output = tf.expand_dims(mat_muled, axis=1)
-                out_output = tf.concat([out_output, output], axis=1)
+                out_output = tf.concat([out_output, tf.transpose(output, perm=[0, 2, 1])], axis=1)
             return out_output, states
 
     def _network(self, context, reuse=False):
