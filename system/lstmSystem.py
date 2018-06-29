@@ -18,7 +18,7 @@ class LSTMSystem(DNNSystem):
         self._preProcessForContext = aPreProcessor.stftForTheContextOf(self._audio)
         self._preProcessForGap = aPreProcessor.stftForGapOf(self._audio)
         super().__init__(architecture, name)
-        self._SNR = tf.reduce_mean(self._pavlovs_SNR(self._architecture.output()[:, :, :30], self._architecture.target()[:, :, :30], onAxis=[1, 2]))
+        self._SNR = tf.reduce_mean(self._pavlovs_SNR(self._architecture.output(), self._architecture.target(), onAxis=[1, 2]))
 
     def reconstruct(self, aBatchOfSignals, model_num):
         with tf.Session() as sess:

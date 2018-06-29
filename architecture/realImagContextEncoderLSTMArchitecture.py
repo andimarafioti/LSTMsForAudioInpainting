@@ -8,7 +8,7 @@ class RealImagContextEncoderLSTMArchitecture(ContextEncoderLSTMArchitecture):
             forward_reconstruction_loss = tf.reduce_sum(tf.square(self._target - self._forwardPrediction))
             backward_reconstruction_loss = tf.reduce_sum(tf.square(self._target - self._backwardPrediction))
 
-            reconstruction_loss = tf.reduce_sum(tf.square(self._target[:, :, :30] - self._output[:, :, :30]))
+            reconstruction_loss = tf.reduce_sum(tf.square(self._target - self._output))
 
             lossL2 = tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables()]) * 1e-5
             total_loss = tf.add_n([reconstruction_loss, lossL2])
