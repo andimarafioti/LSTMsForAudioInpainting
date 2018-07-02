@@ -45,11 +45,11 @@ class ContextEncoderLSTMArchitecture(Architecture):
 
             rnn_cell = tf.contrib.rnn.MultiRNNCell(
                 [tf.contrib.rnn.ConvLSTMCell(conv_ndims=1, input_shape=[self._lstmParams.fftFreqBins(), 1],
-                                             output_channels=5, kernel_shape=[7]),
+                                             output_channels=5, kernel_shape=[15]),
                  tf.contrib.rnn.ConvLSTMCell(conv_ndims=1, input_shape=[self._lstmParams.fftFreqBins(), 5],
-                                             output_channels=5, kernel_shape=[7]),
+                                             output_channels=5, kernel_shape=[33]),
                  tf.contrib.rnn.ConvLSTMCell(conv_ndims=1, input_shape=[self._lstmParams.fftFreqBins(), 5],
-                                             output_channels=1, kernel_shape=[7])])
+                                             output_channels=1, kernel_shape=[15])])
             outputs, states = tf.nn.static_rnn(rnn_cell, dataset, initial_state=initial_state, dtype=tf.float32)
 
             out_output = np.empty([data.shape[0], 0, self._lstmParams.fftFreqBins()])
