@@ -7,7 +7,7 @@ from system.realImagContextLSTMSystem import RealImagContextLSTMSystem
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-sessionsName = "test_fft256_b256_"
+sessionsName = "test_nonlstm_"
 
 params = LstmContextInpaintingParameters(lstmSize=512, batchSize=256, signalLength=5120, inputChannels=4,
 										 gapLength=1024, fftWindowLength=256, fftHopSize=64)
@@ -19,4 +19,4 @@ aPreProcessor = PreAndPostProcessor(params)
 aContextEncoderSystem = RealImagContextLSTMSystem(contextArchitecture, aPreProcessor, params, sessionsName)
 
 aContextEncoderSystem.train("../variationalAutoEncoder/nsynth_train_w5120_g1024_h512.tfrecords",
-							"../variationalAutoEncoder/nsynth_valid_w5120_g1024_h512.tfrecords", 1e-4, restoreNum=186000)
+							"../variationalAutoEncoder/nsynth_valid_w5120_g1024_h512.tfrecords", 1e-3)
