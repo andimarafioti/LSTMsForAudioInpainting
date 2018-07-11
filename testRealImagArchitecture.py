@@ -18,5 +18,7 @@ aPreProcessor = PreAndPostProcessor(params)
 
 aContextEncoderSystem = RealImagContextLSTMSystem(contextArchitecture, aPreProcessor, params, sessionsName)
 
-aContextEncoderSystem.train("../variationalAutoEncoder/nsynth_train_w5120_g1024_h512.tfrecords",
-							"../variationalAutoEncoder/nsynth_valid_w5120_g1024_h512.tfrecords", 1e-3)
+# aContextEncoderSystem.train("../variationalAutoEncoder/nsynth_train_w5120_g1024_h512.tfrecords",
+# 							"../variationalAutoEncoder/nsynth_valid_w5120_g1024_h512.tfrecords", 1e-3)
+#
+aContextEncoderSystem.train("../../aDataset/nsynth_train_w5120_g1024_h512.tfrecords", "../../aDataset/nsynth_valid_w5120_g1024_h512.tfrecords", 1e-3)
