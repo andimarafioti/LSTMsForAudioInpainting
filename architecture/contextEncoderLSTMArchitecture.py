@@ -42,22 +42,11 @@ class ContextEncoderLSTMArchitecture(Architecture):
         with tf.variable_scope(name, reuse=reuse):
             dataset = tf.unstack(data, axis=-2)
 
-            # rnn_cell = tf.contrib.rnn.MultiRNNCell(
-            #     [tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
-            #      tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
-            #      tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize())])
-            # outputs, states = tf.nn.static_rnn(rnn_cell, dataset, initial_state=initial_state, dtype=tf.float32)
-            with tf.variable_scope('fake', reuse=reuse):
-                fake = np.empty([data.shape[0], 0, self._lstmParams.lstmSize()])
-                weights = self._weight_variable([self._lstmParams.fftFreqBins(), self._lstmParams.lstmSize()])
-                biases = self._bias_variable([self._lstmParams.lstmSize()])
-
-                for data in dataset:
-                    mat_muled = tf.matmul(data, weights) + biases
-                    output = tf.expand_dims(mat_muled, axis=1)
-                    fake = tf.concat([fake, output], axis=1)
-                outputs = tf.unstack(fake, axis=1)
-                states = []
+            rnn_cell = tf.contrib.rnn.MultiRNNCell(
+                [tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
+                 tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize()),
+                 tf.contrib.rnn.LSTMCell(self._lstmParams.lstmSize())])
+            outputs, states = tf.nn.static_rnn(rnn_cell, dataset, initial_state=initial_state, dtype=tf.float32)
 
             out_output = np.empty([data.shape[0], 0, self._lstmParams.fftFreqBins()])
             weights = self._weight_variable([self._lstmParams.lstmSize(), self._lstmParams.fftFreqBins()])
