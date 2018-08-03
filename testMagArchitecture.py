@@ -9,7 +9,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 sessionsName = "test_magnet_"
 
-params = LstmContextInpaintingParameters(lstmSize=512, batchSize=256, signalLength=5120, inputChannels=4,
+params = LstmContextInpaintingParameters(lstmSize=512, batchSize=256, signalLength=5120, inputChannels=2,
 										 gapLength=1024, fftWindowLength=256, fftHopSize=64)
 
 contextArchitecture = ContextEncoderLSTMArchitecture(params)
