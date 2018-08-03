@@ -37,18 +37,19 @@ class MagPreAndPostProcessor(object):
         signalWithoutExtraSides = self._removeExtraSidesForSTFTOfGap(aBatchOfSignals)
         stft = tf.contrib.signal.stft(signals=signalWithoutExtraSides,
                                       frame_length=self._fftWindowLength, frame_step=self._fftHopSize)
-        return tf.expand_dims(tf.abs(stft), axis=-1)
+        return tf.abs(stft)
 
     def stftForTheContextOf(self, aBatchOfSignals):
         assert len(aBatchOfSignals.shape) == 2
         leftAndRightSideStacked = self._removeGap(aBatchOfSignals)
         leftAndRightSideStackedAndPadded = self._addPaddingForStftOfContext(leftAndRightSideStacked)
+        STFTOfLeftSide = tf.contrib.signal.stft(signals=leftAndRightSideStackedAndPadded[:, 0],
+                                      frame_length=self._fftWindowLength, frame_step=self._fftHopSize)
+        STFTOfRightSide = tf.contrib.signal.stft(signals=leftAndRightSideStackedAndPadded[:, 1],
+                                      frame_length=self._fftWindowLength, frame_step=self._fftHopSize)
 
-        realAndImagSTFTOfLeftSide = self._realAndImagSTFT(leftAndRightSideStackedAndPadded[:, 0])
-        realAndImagSTFTOfRightSide = self._realAndImagSTFT(leftAndRightSideStackedAndPadded[:, 1])
-
-        contextRealAndImagSTFT = tf.concat([realAndImagSTFTOfLeftSide, realAndImagSTFTOfRightSide], axis=-1)
-        return self._removePaddedCoefs(contextRealAndImagSTFT)
+        contextMagSTFT = tf.stack([STFTOfLeftSide, STFTOfRightSide], axis=-1)
+        return self._removePaddedCoefs(contextMagSTFT)
 
     def _realAndImagSTFT(self, aBatchOfSignals):
         stft = tf.contrib.signal.stft(signals=aBatchOfSignals,
@@ -61,8 +62,8 @@ class MagPreAndPostProcessor(object):
         overlap = self.windowOverlap()
         if overlap < 1:
             paddedWindows = int(1 / overlap) - 1
-            leftSideNoPadded = aBatchOfStft[:, :-paddedWindows, :, :2]
-            rightSideNoPadded = aBatchOfStft[:, paddedWindows:, :, 2:]
+            leftSideNoPadded = aBatchOfStft[:, :-paddedWindows, :, :1]
+            rightSideNoPadded = aBatchOfStft[:, paddedWindows:, :, 1:]
             return tf.concat([leftSideNoPadded, rightSideNoPadded], axis=-1)
         else:
             return aBatchOfStft
